@@ -259,28 +259,28 @@ export default function KanbanCard({
         <div className="min-w-0">
           <div className="space-y-0.5 text-xs text-zinc-700 dark:text-zinc-300">
             <div className="truncate">
-              <span className="text-zinc-500 dark:text-zinc-400">Tel.</span>{" "}
+              <span className="text-zinc-500 dark:text-zinc-400">Tel.:</span>{" "}
               <span className="font-medium text-zinc-900 dark:text-[#f9fafb]">
                 {contact.phone}
               </span>
             </div>
             <div className="truncate">
-              <span className="text-zinc-500 dark:text-zinc-400">Email</span>{" "}
+              <span className="text-zinc-500 dark:text-zinc-400">Email:</span>{" "}
               <span className="text-zinc-900 dark:text-[#f9fafb]">{contact.email}</span>
             </div>
             <div className="truncate text-sm font-semibold text-zinc-900 dark:text-[#f9fafb]">
               {contact.name}
             </div>
             <div className="truncate">
-              <span className="text-zinc-500 dark:text-zinc-400">Typ</span>{" "}
+              <span className="text-zinc-500 dark:text-zinc-400">Typ:</span>{" "}
               <span className="text-zinc-900 dark:text-[#f9fafb]">{typeLabel}</span>
             </div>
             <div className="truncate">
-              <span className="text-zinc-500 dark:text-zinc-400">Podtyp</span>{" "}
+              <span className="text-zinc-500 dark:text-zinc-400">Podtyp:</span>{" "}
               <span className="text-zinc-900 dark:text-[#f9fafb]">{contact.subtype}</span>
             </div>
             <div className="truncate">
-              <span className="text-zinc-500 dark:text-zinc-400">Město</span>{" "}
+              <span className="text-zinc-500 dark:text-zinc-400">Město:</span>{" "}
               <span className="text-zinc-900 dark:text-[#f9fafb]">{contact.city}</span>
             </div>
           </div>

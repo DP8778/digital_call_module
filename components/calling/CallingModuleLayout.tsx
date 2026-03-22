@@ -158,7 +158,7 @@ export default function CallingModuleLayout() {
               {activeContact.name}
             </div>
             <div className="mt-1 truncate text-xs text-zinc-700 dark:text-zinc-300">
-              <span className="text-zinc-500 dark:text-zinc-400">Tel.</span>{" "}
+              <span className="text-zinc-500 dark:text-zinc-400">Tel.:</span>{" "}
               <span className="font-medium text-zinc-900 dark:text-[#f9fafb]">
                 {activeContact.phone}
               </span>

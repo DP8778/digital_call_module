@@ -109,7 +109,7 @@ export default function BacklogItem({ contact, onMoveContact }: BacklogItemProps
       <div className="flex items-start justify-between gap-3 pr-8">
         <div className="min-w-0">
           <div className="text-xs text-zinc-500 dark:text-zinc-400">
-            <span className="font-medium text-zinc-600 dark:text-zinc-300">V systému</span>{" "}
+            <span className="font-medium text-zinc-600 dark:text-zinc-300">V systému:</span>{" "}
             <span className="tabular-nums">{contact.createdAt}</span>
           </div>
           <div className="mt-1 truncate text-sm font-semibold text-zinc-900 dark:text-[#f9fafb]">
@@ -117,29 +117,29 @@ export default function BacklogItem({ contact, onMoveContact }: BacklogItemProps
           </div>
           <div className="mt-2 grid grid-cols-1 gap-1 text-sm text-zinc-700 dark:text-zinc-300">
             <div className="truncate">
-              <span className="text-zinc-500 dark:text-zinc-400">Tel.</span>{" "}
+              <span className="text-zinc-500 dark:text-zinc-400">Tel.:</span>{" "}
               <span className="font-medium text-zinc-900 dark:text-[#f9fafb]">
                 {contact.phone}
               </span>
             </div>
             <div className="truncate">
-              <span className="text-zinc-500 dark:text-zinc-400">Email</span>{" "}
+              <span className="text-zinc-500 dark:text-zinc-400">Email:</span>{" "}
               <span className="text-zinc-900 dark:text-[#f9fafb]">{contact.email}</span>
             </div>
             <div className="truncate">
-              <span className="text-zinc-500 dark:text-zinc-400">Typ</span>{" "}
+              <span className="text-zinc-500 dark:text-zinc-400">Typ:</span>{" "}
               <span className="text-zinc-900 dark:text-[#f9fafb]">{typeLabel}</span>
             </div>
             <div className="truncate">
-              <span className="text-zinc-500 dark:text-zinc-400">Podtyp</span>{" "}
+              <span className="text-zinc-500 dark:text-zinc-400">Podtyp:</span>{" "}
               <span className="text-zinc-900 dark:text-[#f9fafb]">{contact.subtype}</span>
             </div>
             <div className="truncate">
-              <span className="text-zinc-500 dark:text-zinc-400">Město</span>{" "}
+              <span className="text-zinc-500 dark:text-zinc-400">Město:</span>{" "}
               <span className="text-zinc-900 dark:text-[#f9fafb]">{contact.city}</span>
             </div>
             <div className="truncate">
-              <span className="text-zinc-500 dark:text-zinc-400">Zdroj</span>{" "}
+              <span className="text-zinc-500 dark:text-zinc-400">Zdroj:</span>{" "}
               <span className="text-zinc-900 dark:text-[#f9fafb]">{sourceLabel}</span>
             </div>
           </div>
