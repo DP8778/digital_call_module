@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createDemoState } from "./mockContacts";
-import { formatAttemptCount, formatCzechCount, getQueueGroup } from "./queueLogic";
+import { filterQueueContacts, formatAttemptCount, formatCzechCount, getQueueGroup, getQueueSummary } from "./queueLogic";
 import { parsePragueDateTime } from "./time";
 
 const NOW = parsePragueDateTime("2026-10-12T13:00")!;
@@ -38,5 +38,19 @@ describe("seskupení pracovní fronty", () => {
     expect(formatAttemptCount(4)).toBe("4 pokusy");
     expect(formatAttemptCount(5)).toBe("5 pokusů");
     expect(formatCzechCount(1, ["úkol", "úkoly", "úkolů"])).toBe("1 úkol");
+  });
+
+  it("neskryje naléhavou práci z celkového souhrnu aktivním filtrem", () => {
+    const contacts = createDemoState(NOW).contacts;
+    const selection = filterQueueContacts(contacts, {
+      query: "Jana Benešová",
+      source: "all",
+      status: "all",
+    });
+    const summary = getQueueSummary(contacts, selection, NOW);
+
+    expect(selection).toHaveLength(1);
+    expect(summary.selectionAttention).toBe(0);
+    expect(summary.attentionTotal).toBeGreaterThan(0);
   });
 });

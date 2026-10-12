@@ -25,10 +25,11 @@ npm run build
 ## Co demo ukazuje
 
 - Primární frontu „Dnes / K řešení“ rozdělenou podle skutečného času na zmeškané, dnešní, pozdější a nenaplánované aktivity, se zvláštním počtem věcí vyžadujících zásah právě teď.
-- Hledání podle kontaktu či nemovitosti a filtrování podle zdroje a stavu, včetně viditelných aktivních filtrů a odlišných prázdných stavů.
+- Hledání podle kontaktu či nemovitosti a filtrování podle zdroje a stavu. Výběr zůstává zachovaný při přepnutí na Proces i po refreshi stejného tabu; aktivní filtry lze jednotlivě odebrat nebo zrušit všechny.
+- Souhrn naléhavosti se vždy počítá z celé aktivní fronty. Při filtrování se zvlášť ukazuje počet výsledků a naléhavých úkolů ve výběru, takže prázdný výsledek nepůsobí jako hotová práce.
 - Kontextový detail v pořadí důvod → kontext → hlavní akce → příští krok → historie.
 - Záznam výsledku hovoru: nedovoláno, schůzka, ozvat se později nebo vyřadit.
-- Viditelné potvrzení výsledku s novým stavem, přesným dalším krokem a volitelným návratem do fronty.
+- Viditelné potvrzení výsledku s novým stavem, přesným dalším krokem a volitelným návratem do fronty. Focus se vrátí na původní viditelný kontakt, nebo bezpečně na nadpis fronty, pokud už kontakt filtru neodpovídá.
 - Samostatnou úpravu termínu aktivity bez skryté změny procesního stavu; koncové stavy novou aktivitu nepovolí.
 - Potvrzení změny stavu, která zruší existující aktivitu, a dohledatelný zápis zrušení v historii.
 - Kanban jako přehled procesu se všemi šesti stavy.
@@ -80,7 +81,9 @@ Všechny vstupy a výstupy termínů používají `Europe/Prague`. Převod odmí
 
 ## Uložení dema
 
-Stav se ukládá do `localStorage` pod verzovaným klíčem `obvolavani-portfolio-demo-v2`. Při neplatném JSON, neznámé verzi nebo duplicitních ID se použije bezpečný výchozí dataset a UI zobrazí upozornění. Tlačítko „Obnovit demo“ stav vědomě nahradí po potvrzení.
+Stav kontaktů se ukládá do `localStorage` pod verzovaným klíčem `obvolavani-portfolio-demo-v2`. Při neplatném JSON, neznámé verzi nebo duplicitních ID se použije bezpečný výchozí dataset a UI zobrazí upozornění na obnovu. Pokud úložiště nelze číst nebo zapisovat, demo dál funguje v paměti a zvláštní upozornění vysvětluje, že změny po zavření nemusí zůstat zachované. Reset funguje i při blokovaném úložišti.
+
+Pracovní UI výběr má samostatný verzovaný klíč `obvolavani-portfolio-ui-v1` v `sessionStorage`. Obsahuje jen pohled, hledaný text, zdroj a procesní stav; nemění schéma kontaktů a nikdy neobnovuje otevřený dialog ani rozpracovaný formulář. Neplatné enum hodnoty, JSON nebo blokované úložiště vedou k bezpečnému výchozímu pohledu.
 
 ## Přístupnost
 

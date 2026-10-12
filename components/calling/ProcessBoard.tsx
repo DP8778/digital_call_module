@@ -15,7 +15,7 @@ export default function ProcessBoard({ contacts, now, onOpenContact }: { contact
     <div className="mx-auto w-full max-w-[1500px] overflow-hidden px-4 py-6 sm:px-6 sm:py-9">
       <div className="mb-6">
         <p className="eyebrow">Přehled procesu</p>
-        <h1 className="text-main mt-1 text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">Kanban</h1>
+        <h1 id="process-heading" tabIndex={-1} className="text-main focus-ring mt-1 rounded-lg text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">Kanban</h1>
         <p className="text-muted mt-1.5 text-sm leading-relaxed">Stav kontaktu je oddělený od termínu další aktivity. Změny lze provést z detailu bez přetahování.</p>
       </div>
       <div className="-mx-4 overflow-x-auto px-4 pb-3 sm:-mx-6 sm:px-6 md:mx-0 md:overflow-visible md:px-0">
@@ -37,7 +37,7 @@ export default function ProcessBoard({ contacts, now, onOpenContact }: { contact
                     <Inbox className="mx-auto mb-2 size-5" aria-hidden="true" />Zatím bez kontaktů
                   </div>
                 ) : items.map((contact) => (
-                  <button key={contact.id} type="button" onClick={() => onOpenContact(contact)} className="focus-ring group w-full rounded-xl border bg-[var(--dc-surface-elevated)] p-3.5 text-left shadow-sm transition-[border-color,background-color,box-shadow] duration-150 hover:border-[var(--dc-border-strong)] hover:bg-[var(--dc-surface)] hover:shadow-md" style={{ borderColor: "var(--dc-border)" }}>
+                  <button id={`process-contact-${contact.id}`} key={contact.id} type="button" onClick={() => onOpenContact(contact)} className="focus-ring group w-full rounded-xl border bg-[var(--dc-surface-elevated)] p-3.5 text-left shadow-sm transition-[border-color,background-color,box-shadow] duration-150 hover:border-[var(--dc-border-strong)] hover:bg-[var(--dc-surface)] hover:shadow-md" style={{ borderColor: "var(--dc-border)" }}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0"><div className="text-main truncate font-semibold">{contact.name}</div><div className="text-muted mt-1 truncate text-sm">{contact.subtype} · {contact.city}</div></div>
                       <ArrowUpRight className="text-faint size-4 shrink-0 group-hover:text-[var(--dc-accent)]" aria-hidden="true" />

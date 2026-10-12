@@ -1,20 +1,22 @@
 "use client";
 
-import { AlertCircle, CalendarClock, ChevronRight, CircleCheck, Inbox, Search, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { AlertCircle, CalendarClock, ChevronRight, CircleCheck, Inbox, Search } from "lucide-react";
+import { useMemo } from "react";
 import { COLUMN_LABEL_CS } from "./allowedMoves";
 import { SOURCE_LABEL } from "./labels";
 import {
   formatAttemptCount,
   formatCzechCount,
+  filterQueueContacts,
   getAttentionReason,
   getQueueGroup,
-  needsAttentionNow,
+  getQueueSummary,
   type QueueGroupId,
 } from "./queueLogic";
 import { getAttemptCount } from "./stateLogic";
 import StatusPill from "./StatusPill";
-import type { ColumnId, Contact, ContactSource } from "./types";
+import type { QueueFilters } from "./uiState";
+import type { ColumnId, Contact } from "./types";
 
 const GROUP_META: Record<QueueGroupId, { title: string; description: string }> = {
   missed: { title: "Zmeškané", description: "Termín už uplynul — rozhodněte o dalším kroku" },
@@ -26,38 +28,22 @@ const GROUP_META: Record<QueueGroupId, { title: string; description: string }> =
 type Props = {
   contacts: Contact[];
   now: number;
+  filters: QueueFilters;
+  onFiltersChange: (filters: QueueFilters) => void;
   onOpenContact: (contact: Contact) => void;
 };
 
-export default function TodayView({ contacts, now, onOpenContact }: Props) {
-  const [query, setQuery] = useState("");
-  const [source, setSource] = useState<"all" | ContactSource>("all");
-  const [status, setStatus] = useState<"all" | ColumnId>("all");
-
-  const activeContacts = useMemo(
-    () => contacts.filter((contact) => contact.status !== "listed" && contact.status !== "disqualified"),
-    [contacts],
-  );
-  const filtersActive = query.trim() !== "" || source !== "all" || status !== "all";
+export default function TodayView({ contacts, now, filters, onFiltersChange, onOpenContact }: Props) {
+  const filtersActive = filters.query.trim() !== "" || filters.source !== "all" || filters.status !== "all";
 
   const filteredContacts = useMemo(() => {
-    const normalized = query.trim().toLocaleLowerCase("cs");
-    return activeContacts
-      .filter((contact) => source === "all" || contact.source === source)
-      .filter((contact) => status === "all" || contact.status === status)
-      .filter((contact) => {
-        if (!normalized) return true;
-        return [contact.name, contact.city, contact.subtype, contact.phone, contact.email]
-          .join(" ")
-          .toLocaleLowerCase("cs")
-          .includes(normalized);
-      })
+    return filterQueueContacts(contacts, filters)
       .sort((a, b) => {
         const aDue = a.nextActivity?.dueAt ?? Number.POSITIVE_INFINITY;
         const bDue = b.nextActivity?.dueAt ?? Number.POSITIVE_INFINITY;
         return aDue - bDue || a.name.localeCompare(b.name, "cs");
       });
-  }, [activeContacts, query, source, status]);
+  }, [contacts, filters]);
 
   const groups = useMemo(() => (Object.keys(GROUP_META) as QueueGroupId[]).map((id) => ({
     id,
@@ -65,13 +51,10 @@ export default function TodayView({ contacts, now, onOpenContact }: Props) {
     contacts: filteredContacts.filter((contact) => getQueueGroup(contact, now) === id),
   })), [filteredContacts, now]);
 
-  const attentionNow = filteredContacts.filter((contact) => needsAttentionNow(contact, now)).length;
-  const todayRemaining = groups.find((group) => group.id === "today")?.contacts.filter((contact) => !needsAttentionNow(contact, now)).length ?? 0;
+  const summary = getQueueSummary(contacts, filteredContacts, now);
 
   function clearFilters() {
-    setQuery("");
-    setSource("all");
-    setStatus("all");
+    onFiltersChange({ query: "", source: "all", status: "all" });
   }
 
   return (
@@ -80,14 +63,15 @@ export default function TodayView({ contacts, now, onOpenContact }: Props) {
         <p className="eyebrow">Pracovní fronta</p>
         <div className="mt-1 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-main text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">Dnes / K řešení</h1>
+            <h1 id="queue-heading" tabIndex={-1} className="text-main focus-ring rounded-lg text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">Dnes / K řešení</h1>
             <p className="text-muted mt-1.5 max-w-2xl text-sm leading-relaxed">Nejdřív vyřešte prošlé termíny a kontakty připravené k hovoru.</p>
           </div>
           <div className="flex flex-wrap gap-2" aria-label="Souhrn pracovní fronty">
-            <span className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${attentionNow > 0 ? "tone-danger" : "tone-success"}`}>
-              {attentionNow > 0 ? `${formatCzechCount(attentionNow, ["úkol", "úkoly", "úkolů"])} právě teď` : "Nic naléhavého"}
+            <span className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${summary.attentionTotal > 0 ? "tone-danger" : "tone-success"}`}>
+              {summary.attentionTotal > 0 ? `${formatCzechCount(summary.attentionTotal, ["úkol", "úkoly", "úkolů"])} právě teď celkem` : "Nic naléhavého v celé frontě"}
             </span>
-            <span className="tone-neutral rounded-full border px-3 py-1.5 text-sm font-medium">{formatCzechCount(todayRemaining, ["úkol", "úkoly", "úkolů"])} ještě dnes</span>
+            <span className="tone-neutral rounded-full border px-3 py-1.5 text-sm font-medium">{formatCzechCount(summary.todayRemainingTotal, ["úkol", "úkoly", "úkolů"])} ještě dnes</span>
+            {filtersActive ? <span className="tone-accent rounded-full border px-3 py-1.5 text-sm font-medium">Ve výběru: {summary.selectionResults} výsledků · {summary.selectionAttention} naléhavých</span> : null}
           </div>
         </div>
       </div>
@@ -97,34 +81,26 @@ export default function TodayView({ contacts, now, onOpenContact }: Props) {
           <span className="text-muted mb-1.5 block text-xs font-semibold">Hledat kontakt</span>
           <span className="relative block">
             <Search className="text-faint pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2" aria-hidden="true" />
-            <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Jméno, město, nemovitost…" className={`field h-11 w-full pl-9 pr-3 text-sm ${query.trim() ? "border-[var(--dc-accent)]" : ""}`} />
+            <input type="search" value={filters.query} onChange={(event) => onFiltersChange({ ...filters, query: event.target.value })} placeholder="Jméno, město, nemovitost…" className={`field h-11 w-full pl-9 pr-3 text-sm ${filters.query.trim() ? "border-[var(--dc-accent)]" : ""}`} />
           </span>
         </label>
         <label>
           <span className="text-muted mb-1.5 block text-xs font-semibold">Zdroj</span>
-          <select value={source} onChange={(event) => setSource(event.target.value as typeof source)} className={`field h-11 w-full px-3 text-sm ${source !== "all" ? "border-[var(--dc-accent)]" : ""}`}>
+          <select value={filters.source} onChange={(event) => onFiltersChange({ ...filters, source: event.target.value as QueueFilters["source"] })} className={`field h-11 w-full px-3 text-sm ${filters.source !== "all" ? "border-[var(--dc-accent)]" : ""}`}>
             <option value="all">Všechny zdroje</option>
             {Object.entries(SOURCE_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
         </label>
         <label>
           <span className="text-muted mb-1.5 block text-xs font-semibold">Procesní stav</span>
-          <select value={status} onChange={(event) => setStatus(event.target.value as typeof status)} className={`field h-11 w-full px-3 text-sm ${status !== "all" ? "border-[var(--dc-accent)]" : ""}`}>
+          <select value={filters.status} onChange={(event) => onFiltersChange({ ...filters, status: event.target.value as QueueFilters["status"] })} className={`field h-11 w-full px-3 text-sm ${filters.status !== "all" ? "border-[var(--dc-accent)]" : ""}`}>
             <option value="all">Všechny stavy</option>
             {(["backlog", "to_call", "call_later", "meeting"] as ColumnId[]).map((value) => <option key={value} value={value}>{COLUMN_LABEL_CS[value]}</option>)}
           </select>
         </label>
       </div>
 
-      {filtersActive ? (
-        <div className="mb-6 flex flex-wrap items-center gap-2" aria-label="Aktivní filtry">
-          <span className="text-muted text-xs font-semibold uppercase tracking-wide">Aktivní výběr</span>
-          {query.trim() ? <button type="button" onClick={() => setQuery("")} className="tone-accent focus-ring inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium">„{query.trim()}“ <X className="size-3" aria-hidden="true" /></button> : null}
-          {source !== "all" ? <button type="button" onClick={() => setSource("all")} className="tone-accent focus-ring inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium">{SOURCE_LABEL[source]} <X className="size-3" aria-hidden="true" /></button> : null}
-          {status !== "all" ? <button type="button" onClick={() => setStatus("all")} className="tone-accent focus-ring inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium">{COLUMN_LABEL_CS[status]} <X className="size-3" aria-hidden="true" /></button> : null}
-          <button type="button" onClick={clearFilters} className="button-quiet h-8 px-2 text-xs">Zobrazit celou frontu</button>
-        </div>
-      ) : <div className="mb-2" />}
+      <div className="mb-6" />
 
       {filteredContacts.length === 0 ? (
         <div className="content-surface border-dashed px-5 py-14 text-center">
@@ -145,7 +121,7 @@ export default function TodayView({ contacts, now, onOpenContact }: Props) {
               </div>
               <div className={`content-surface overflow-hidden ${group.id === "later" ? "opacity-[0.92]" : ""}`} style={group.id === "missed" ? { borderLeftWidth: 3, borderLeftColor: "var(--dc-danger)" } : undefined}>
                 {group.contacts.map((contact, index) => (
-                  <button key={contact.id} type="button" onClick={() => onOpenContact(contact)} className={`focus-ring group grid w-full gap-3 px-4 py-4 text-left transition-colors duration-150 hover:bg-[var(--dc-surface-subtle)] sm:grid-cols-[minmax(180px,1.2fr)_minmax(210px,1fr)_auto_24px] sm:items-center ${index > 0 ? "border-t border-[var(--dc-border)]" : ""}`}>
+                  <button id={`queue-contact-${contact.id}`} key={contact.id} type="button" onClick={() => onOpenContact(contact)} className={`focus-ring group grid w-full gap-3 px-4 py-4 text-left transition-colors duration-150 hover:bg-[var(--dc-surface-subtle)] sm:grid-cols-[minmax(180px,1.2fr)_minmax(210px,1fr)_auto_24px] sm:items-center ${index > 0 ? "border-t border-[var(--dc-border)]" : ""}`}>
                     <div className="min-w-0"><div className="text-main truncate font-semibold">{contact.name}</div><div className="text-muted mt-1 truncate text-sm">{contact.subtype} · {contact.city}</div></div>
                     <div className="min-w-0"><div className={`text-sm font-medium ${group.id === "missed" ? "text-[var(--dc-danger)]" : "text-main"}`}>{getAttentionReason(contact, now)}</div><div className="text-muted mt-1 text-xs">{SOURCE_LABEL[contact.source]} · {formatAttemptCount(getAttemptCount(contact))}</div></div>
                     <div className="flex items-center justify-between gap-3 sm:justify-end"><StatusPill status={contact.status} /></div>

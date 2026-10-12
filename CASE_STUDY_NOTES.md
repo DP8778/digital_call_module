@@ -44,11 +44,15 @@ Zvolené řešení ponechává Kanban jako sekundární přehled a přidává pr
 - Počet pokusů se odvozuje pouze ze zaznamenané historie hovorů.
 - Zmeškané aktivity se určují vůči skutečnému času, takže dnešní prošlý termín nezůstává ve skupině „Dnes“.
 - Zmeškané, dnešní, pozdější a nenaplánované aktivity jsou textově oddělené; souhrn zvlášť ukazuje práci vyžadující zásah právě teď.
+- Hlavní souhrn naléhavosti vychází vždy z celé aktivní fronty, ne z právě filtrovaných kontaktů. Výběr má vlastní stručný počet výsledků a naléhavých položek.
+- Pohled a filtry tvoří jeden sdílený, verzovaný UI stav pro aktuální tab. Aktivní výběr proto nezmizí v Kanbanu ani po refreshi a reset dema jej vědomě vyčistí.
 - Záznam výsledku používá čtyři konkrétní možnosti s konzistentním mapováním na stav.
 - Samostatné plánování výslovně nemění stav.
 - Krátké zděděné doporučení pro tipaře se ukládá přesně na sekundy; vlastní termín zůstává minutový a rozdíl je v dialogu vysvětlený.
 - Koncové stavy neumožňují plánování. Změna stavu rušící termín vyžaduje potvrzení a vytváří historickou událost.
 - Po výsledku zůstává uživatel v detailu s potvrzením nového stavu a dalšího kroku a může se vědomě vrátit do fronty.
+- Návrat z detailu obnoví focus na kontakt jen tehdy, když je stále ve výběru; jinak použije nadpis aktuálního seznamu. Focus se neposílá na odmountovaný prvek.
+- Chyba čtení či zápisu úložiště neblokuje práci v paměti. UI rozlišuje obnovu neplatných uložených dat od situace, kdy aktuální změny nelze uchovat.
 - Kontakty jsou nevolatelné, syntetické a viditelně označené.
 - Všechny klíčové akce fungují klávesnicí bez drag-and-drop.
 
@@ -71,7 +75,8 @@ Výchozí dataset obsahuje aktivní dnešní hovory, zmeškaný hovor, dnešní 
 - Automatické testy čisté logiky: povolený i zakázaný přesun, vznik pokusu, plánování bez změny stavu, zákaz plánování v koncovém stavu, auditované zrušení aktivity, validace minulého termínu, přesné krátké doporučení, jednorázová expirace a obnova uloženého dema.
 - Automatické testy řazení fronty: dnešní prošlý termín, budoucí dnešní termín, hranice půlnoci a české tvary počtů.
 - Automatické testy pražského času včetně půlnoci a změn letního/zimního času.
-- Automatické testy: 19/19 prošlo ve třech testovacích souborech.
+- Automatické testy navíc pokrývají celkovou naléhavost mimo aktivní filtr, validaci uloženého UI výběru a výjimky při čtení, zápisu a resetu úložiště.
+- Automatické testy: 26/26 prošlo v pěti testovacích souborech.
 - TypeScript (`tsc --noEmit`), ESLint a produkční Next.js build prošly bez chyby.
 - Lokální vývojový server ve smoke testu vrátil HTTP 200 a správný titul stránky.
 - Vizuální redesign nezměnil čistou stavovou logiku, časová pravidla ani datové typy.

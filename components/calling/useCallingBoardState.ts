@@ -1,27 +1,33 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createDemoState } from "./mockContacts";
+import { persistDemoState, readDemoState, resetDemoState, type StorageNotice } from "./callingStorage";
 import {
   applyTimeRules,
-  DEMO_STORAGE_KEY,
   moveContact as moveContactInState,
   recordCallOutcome,
-  restoreDemoState,
   scheduleActivity as scheduleActivityInState,
 } from "./stateLogic";
 import type { ColumnId, DemoState, OutcomeInput, ScheduleInput } from "./types";
 
+function getLocalStorage(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
 export function useCallingBoardState() {
   const [state, setState] = useState<DemoState | null>(null);
-  const [storageRecovered, setStorageRecovered] = useState(false);
+  const [storageNotice, setStorageNotice] = useState<StorageNotice>(null);
 
   useEffect(() => {
     let cancelled = false;
     window.queueMicrotask(() => {
       if (cancelled) return;
-      const restored = restoreDemoState(window.localStorage.getItem(DEMO_STORAGE_KEY), Date.now());
-      setStorageRecovered(restored.recovered);
+      const restored = readDemoState(getLocalStorage(), Date.now());
+      setStorageNotice(restored.notice);
       setState(restored.state);
     });
     return () => { cancelled = true; };
@@ -29,10 +35,8 @@ export function useCallingBoardState() {
 
   useEffect(() => {
     if (!state) return;
-    try {
-      window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      window.queueMicrotask(() => setStorageRecovered(true));
+    if (!persistDemoState(getLocalStorage(), state)) {
+      window.queueMicrotask(() => setStorageNotice("unavailable"));
     }
   }, [state]);
 
@@ -62,10 +66,9 @@ export function useCallingBoardState() {
   }, []);
 
   const resetDemo = useCallback(() => {
-    const fresh = createDemoState(Date.now());
-    window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(fresh));
-    setStorageRecovered(false);
-    setState(fresh);
+    const reset = resetDemoState(getLocalStorage(), Date.now());
+    setStorageNotice(reset.notice);
+    setState(reset.state);
   }, []);
 
   const contactsByStatus = useMemo(() => {
@@ -85,8 +88,8 @@ export function useCallingBoardState() {
   return {
     state,
     contactsByStatus,
-    storageRecovered,
-    dismissStorageWarning: () => setStorageRecovered(false),
+    storageNotice,
+    dismissStorageNotice: () => setStorageNotice(null),
     moveContact,
     recordOutcome,
     scheduleActivity,

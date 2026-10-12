@@ -1,10 +1,10 @@
 "use client";
 
-import { KanbanSquare, ListTodo, RotateCcw } from "lucide-react";
+import { KanbanSquare, ListTodo, RotateCcw, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { COLUMN_LABEL_CS } from "./allowedMoves";
 import ContactDetail from "./ContactDetail";
-import { ACTIVITY_LABEL } from "./labels";
+import { ACTIVITY_LABEL, SOURCE_LABEL } from "./labels";
 import OutcomeModal from "./OutcomeModal";
 import ProcessBoard from "./ProcessBoard";
 import ResetDemoModal from "./ResetDemoModal";
@@ -13,13 +13,13 @@ import StatusChangeModal from "./StatusChangeModal";
 import TodayView from "./TodayView";
 import { formatPragueDateTime, formatPragueDateTimePrecise } from "./time";
 import type { ActionFeedback, ColumnId, Contact, OutcomeInput, ScheduleInput } from "./types";
+import { useCallingUiState, type CallingView } from "./uiState";
 import { useCallingBoardState } from "./useCallingBoardState";
-
-type View = "today" | "process";
 
 export default function CallingModuleLayout() {
   const board = useCallingBoardState();
-  const [view, setView] = useState<View>("today");
+  const ui = useCallingUiState();
+  const { filters, view } = ui.state;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [outcomeOpen, setOutcomeOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -28,11 +28,27 @@ export default function CallingModuleLayout() {
   const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [announcement, setAnnouncement] = useState("");
+  const [focusRequest, setFocusRequest] = useState<{ contactId: string; view: CallingView } | null>(null);
+
+  const filtersActive = filters.query.trim() !== "" || filters.source !== "all" || filters.status !== "all";
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (selectedId || !focusRequest || focusRequest.view !== view) return;
+    const frame = window.requestAnimationFrame(() => {
+      const prefix = view === "today" ? "queue-contact" : "process-contact";
+      const fallbackId = view === "today" ? "queue-heading" : "process-heading";
+      const target = document.getElementById(`${prefix}-${focusRequest.contactId}`)
+        ?? document.getElementById(fallbackId);
+      target?.focus();
+      setFocusRequest(null);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusRequest, selectedId, view]);
 
   const selectedContact = useMemo(
     () => board.state?.contacts.find((contact) => contact.id === selectedId) ?? null,
@@ -64,7 +80,9 @@ export default function CallingModuleLayout() {
     applyMove(target);
   }
 
-  function closeDetail() {
+  function closeDetail(returnView: CallingView = view) {
+    if (selectedId) setFocusRequest({ contactId: selectedId, view: returnView });
+    if (returnView !== view) ui.setView(returnView);
     setSelectedId(null);
     setOutcomeOpen(false);
     setScheduleOpen(false);
@@ -108,7 +126,8 @@ export default function CallingModuleLayout() {
 
   function resetDemo() {
     board.resetDemo();
-    closeDetail();
+    ui.reset();
+    closeDetail("today");
     setAnnouncement("Demo bylo obnoveno do výchozího stavu.");
   }
 
@@ -128,21 +147,33 @@ export default function CallingModuleLayout() {
       <div className="control-glass sticky top-[60px] z-30 border-b sm:top-16">
         <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
           <nav aria-label="Hlavní zobrazení" className="surface-subtle flex rounded-[14px] border p-1">
-            <button type="button" onClick={() => setView("today")} aria-current={view === "today" ? "page" : undefined} className={`focus-ring flex h-9 items-center gap-2 rounded-[10px] px-3 text-sm font-semibold transition-[background-color,color,box-shadow] duration-150 ${view === "today" ? "text-main bg-[var(--dc-surface-elevated)] shadow-sm" : "text-muted hover:text-main"}`}><ListTodo className="size-4" aria-hidden="true" />K řešení</button>
-            <button type="button" onClick={() => setView("process")} aria-current={view === "process" ? "page" : undefined} className={`focus-ring flex h-9 items-center gap-2 rounded-[10px] px-3 text-sm font-semibold transition-[background-color,color,box-shadow] duration-150 ${view === "process" ? "text-main bg-[var(--dc-surface-elevated)] shadow-sm" : "text-muted hover:text-main"}`}><KanbanSquare className="size-4" aria-hidden="true" />Proces</button>
+            <button type="button" onClick={() => ui.setView("today")} aria-current={view === "today" ? "page" : undefined} className={`focus-ring flex h-9 items-center gap-2 rounded-[10px] px-3 text-sm font-semibold transition-[background-color,color,box-shadow] duration-150 ${view === "today" ? "text-main bg-[var(--dc-surface-elevated)] shadow-sm" : "text-muted hover:text-main"}`}><ListTodo className="size-4" aria-hidden="true" />K řešení</button>
+            <button type="button" onClick={() => ui.setView("process")} aria-current={view === "process" ? "page" : undefined} className={`focus-ring flex h-9 items-center gap-2 rounded-[10px] px-3 text-sm font-semibold transition-[background-color,color,box-shadow] duration-150 ${view === "process" ? "text-main bg-[var(--dc-surface-elevated)] shadow-sm" : "text-muted hover:text-main"}`}><KanbanSquare className="size-4" aria-hidden="true" />Proces</button>
           </nav>
           <button type="button" onClick={() => setResetOpen(true)} className="button-quiet h-10 px-2.5 sm:px-3"><RotateCcw className="size-4" aria-hidden="true" /><span className="hidden sm:inline">Obnovit demo</span><span className="sr-only sm:hidden">Obnovit demo</span></button>
         </div>
       </div>
 
-      {board.storageRecovered ? (
+      {board.storageNotice ? (
         <div role="status" className="tone-warning border-b px-4 py-3 text-sm">
-          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4"><span>Uložená data nebyla kompatibilní nebo dostupná. Demo bylo bezpečně obnoveno.</span><button type="button" onClick={board.dismissStorageWarning} className="button-quiet h-9 shrink-0 px-2">Skrýt</button></div>
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4"><span>{board.storageNotice === "recovered" ? "Uložená data nebyla platná. Demo bylo bezpečně obnoveno z výchozího datasetu." : "Změny nyní nelze ukládat do prohlížeče. Můžete pokračovat, po zavření ale nemusí zůstat zachované."}</span><button type="button" onClick={board.dismissStorageNotice} className="button-quiet h-9 shrink-0 px-2">Skrýt</button></div>
+        </div>
+      ) : null}
+
+      {filtersActive ? (
+        <div className="border-b bg-[var(--dc-surface)] px-4 py-2.5 sm:px-6" style={{ borderColor: "var(--dc-border)" }}>
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2" aria-label="Aktivní filtry fronty">
+            <span className="text-muted text-xs font-semibold uppercase tracking-wide">Výběr fronty</span>
+            {filters.query.trim() ? <button type="button" onClick={() => ui.setFilters({ ...filters, query: "" })} className="tone-accent focus-ring inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium">„{filters.query.trim()}“ <X className="size-3" aria-hidden="true" /></button> : null}
+            {filters.source !== "all" ? <button type="button" onClick={() => ui.setFilters({ ...filters, source: "all" })} className="tone-accent focus-ring inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium">{SOURCE_LABEL[filters.source]} <X className="size-3" aria-hidden="true" /></button> : null}
+            {filters.status !== "all" ? <button type="button" onClick={() => ui.setFilters({ ...filters, status: "all" })} className="tone-accent focus-ring inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium">{COLUMN_LABEL_CS[filters.status]} <X className="size-3" aria-hidden="true" /></button> : null}
+            <button type="button" onClick={() => ui.setFilters({ query: "", source: "all", status: "all" })} className="button-quiet h-8 px-2 text-xs">Zrušit vše</button>
+          </div>
         </div>
       ) : null}
 
       <div aria-live="polite" className="sr-only">{announcement}</div>
-      {view === "today" ? <TodayView contacts={board.state.contacts} now={now} onOpenContact={openContact} /> : <ProcessBoard contacts={board.state.contacts} now={now} onOpenContact={openContact} />}
+      {view === "today" ? <TodayView contacts={board.state.contacts} now={now} filters={filters} onFiltersChange={ui.setFilters} onOpenContact={openContact} /> : <ProcessBoard contacts={board.state.contacts} now={now} onOpenContact={openContact} />}
 
       {selectedContact ? (
         <ContactDetail
@@ -150,8 +181,8 @@ export default function CallingModuleLayout() {
           now={now}
           active={!outcomeOpen && !scheduleOpen && pendingMove === null}
           feedback={feedback}
-          onClose={closeDetail}
-          onBackToQueue={() => { setView("today"); closeDetail(); }}
+          onClose={() => closeDetail()}
+          onBackToQueue={() => closeDetail("today")}
           onDismissFeedback={() => setFeedback(null)}
           onMove={requestMove}
           onRecordOutcome={() => { setNow(Date.now()); setOutcomeOpen(true); }}

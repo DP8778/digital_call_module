@@ -36,7 +36,12 @@ export default function AccessibleModal({
 
   useEffect(() => {
     returnFocusRef.current = document.activeElement as HTMLElement | null;
-    return () => returnFocusRef.current?.focus();
+    return () => {
+      const target = returnFocusRef.current;
+      window.queueMicrotask(() => {
+        if (target?.isConnected && !target.closest("[inert]")) target.focus();
+      });
+    };
   }, []);
 
   useEffect(() => {
