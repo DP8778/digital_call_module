@@ -9,6 +9,8 @@ type Props = {
   onClose: () => void;
   children: ReactNode;
   size?: "md" | "lg";
+  active?: boolean;
+  layer?: "base" | "nested";
 };
 
 export default function AccessibleModal({
@@ -17,23 +19,40 @@ export default function AccessibleModal({
   onClose,
   children,
   size = "md",
+  active = true,
+  layer = "base",
 }: Props) {
   const titleId = useId();
   const descriptionId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const hasFocusedRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     returnFocusRef.current = document.activeElement as HTMLElement | null;
-    closeRef.current?.focus();
+    return () => returnFocusRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (!active) return;
+    if (!hasFocusedRef.current) {
+      closeRef.current?.focus();
+      hasFocusedRef.current = true;
+    }
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        event.stopImmediatePropagation();
+        onCloseRef.current();
         return;
       }
       if (event.key !== "Tab" || !dialogRef.current) return;
@@ -54,19 +73,20 @@ export default function AccessibleModal({
       }
     }
 
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown, true);
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown, true);
       document.body.style.overflow = previousOverflow;
-      returnFocusRef.current?.focus();
     };
-  }, [onClose]);
+  }, [active]);
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-5"
+      className={`fixed inset-0 flex items-end justify-center bg-slate-950/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-5 ${layer === "nested" ? "z-[60]" : "z-50"} ${active ? "" : "pointer-events-none"}`}
+      aria-hidden={active ? undefined : true}
+      inert={!active}
       onMouseDown={(event) => {
-        if (event.currentTarget === event.target) onClose();
+        if (active && event.currentTarget === event.target) onClose();
       }}
     >
       <div

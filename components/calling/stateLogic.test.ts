@@ -4,6 +4,7 @@ import {
   applyTimeRules,
   CALL_READY_GRACE_MS,
   getAttemptCount,
+  getRecommendedFollowUpAt,
   moveContact,
   recordCallOutcome,
   restoreDemoState,
@@ -55,6 +56,44 @@ describe("stavová logika dema", () => {
 
     expect(contact(next, "demo-7").status).toBe("backlog");
     expect(contact(next, "demo-7").nextActivity).toMatchObject({ type: "meeting", dueAt });
+  });
+
+  it("v koncovém stavu odmítne naplánovat další aktivitu", () => {
+    const initial = createDemoState(NOW);
+    const next = scheduleActivity(initial, "demo-9", { activityType: "call", dueAt: NOW + 60_000 }, NOW);
+
+    expect(next).toBe(initial);
+    expect(contact(next, "demo-9").status).toBe("listed");
+    expect(contact(next, "demo-9").nextActivity).toBeNull();
+  });
+
+  it("při přesunu ruší aktivitu dohledatelnou událostí", () => {
+    const initial = createDemoState(NOW);
+    const moved = moveContact(initial, "demo-1", "backlog", NOW + 1_000);
+    const updated = contact(moved, "demo-1");
+
+    expect(updated.nextActivity).toBeNull();
+    expect(updated.history.find((entry) => entry.type === "activity_cancelled")?.note).toContain("Hovor");
+  });
+
+  it("odmítne i u nedovolání explicitní termín v minulosti", () => {
+    const initial = createDemoState(NOW);
+    const next = recordCallOutcome(initial, "demo-4", {
+      outcome: "no_answer",
+      note: "",
+      scheduledAt: NOW - 1,
+    }, NOW);
+
+    expect(next).toBe(initial);
+  });
+
+  it("zachová přesné krátké intervaly tipaře 60 a 30 sekund", () => {
+    const initial = createDemoState(NOW);
+    const first = contact(initial, "demo-4");
+    const later = contact(initial, "demo-11");
+
+    expect(getRecommendedFollowUpAt(first, NOW)).toBe(NOW + 60_000);
+    expect(getRecommendedFollowUpAt(later, NOW)).toBe(NOW + 30_000);
   });
 
   it("expirace hovoru provede právě jeden přechod bez nového pokusu", () => {

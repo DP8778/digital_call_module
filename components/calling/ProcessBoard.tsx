@@ -3,6 +3,7 @@
 import { ArrowUpRight, Inbox } from "lucide-react";
 import { COLUMN_DESCRIPTION_CS, COLUMN_LABEL_CS } from "./allowedMoves";
 import { ACTIVITY_LABEL } from "./labels";
+import { formatAttemptCount } from "./queueLogic";
 import { getAttemptCount } from "./stateLogic";
 import { relativeDayLabel } from "./time";
 import type { ColumnId, Contact } from "./types";
@@ -42,7 +43,7 @@ export default function ProcessBoard({ contacts, now, onOpenContact }: { contact
                     </div>
                     <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs">
                       <span className="min-w-0 truncate font-medium text-slate-700">{contact.nextActivity ? `${ACTIVITY_LABEL[contact.nextActivity.type]} · ${relativeDayLabel(contact.nextActivity.dueAt, now)}` : "Bez dalšího termínu"}</span>
-                      <span className="shrink-0 text-slate-400">{getAttemptCount(contact)} pokusů</span>
+                      <span className="shrink-0 text-slate-400">{formatAttemptCount(getAttemptCount(contact))}</span>
                     </div>
                   </button>
                 ))}

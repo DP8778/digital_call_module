@@ -24,11 +24,13 @@ npm run build
 
 ## Co demo ukazuje
 
-- Primární frontu „Dnes / K řešení“ rozdělenou na zmeškané, dnešní, pozdější a nenaplánované aktivity.
-- Hledání podle kontaktu či nemovitosti a filtrování podle zdroje a stavu.
-- Kontextový detail s příštím krokem, historií, poznámkami a bezpečnými stavovými akcemi.
+- Primární frontu „Dnes / K řešení“ rozdělenou podle skutečného času na zmeškané, dnešní, pozdější a nenaplánované aktivity, se zvláštním počtem věcí vyžadujících zásah právě teď.
+- Hledání podle kontaktu či nemovitosti a filtrování podle zdroje a stavu, včetně viditelných aktivních filtrů a odlišných prázdných stavů.
+- Kontextový detail v pořadí důvod → kontext → hlavní akce → příští krok → historie.
 - Záznam výsledku hovoru: nedovoláno, schůzka, ozvat se později nebo vyřadit.
-- Samostatnou úpravu termínu aktivity bez skryté změny procesního stavu.
+- Viditelné potvrzení výsledku s novým stavem, přesným dalším krokem a volitelným návratem do fronty.
+- Samostatnou úpravu termínu aktivity bez skryté změny procesního stavu; koncové stavy novou aktivitu nepovolí.
+- Potvrzení změny stavu, která zruší existující aktivitu, a dohledatelný zápis zrušení v historii.
 - Kanban jako přehled procesu se všemi šesti stavy.
 - Lokální pokračování scénáře po refreshi a bezpečný reset dema.
 
@@ -59,12 +61,14 @@ Původní text pohovorového zadání není k dispozici. Následující interval
 
 | Událost | Tipař | FB / call centrum | Inzerce | Chování |
 | --- | ---: | ---: | ---: | --- |
-| Doporučený follow-up po 1. nedovolání | 60 s | 1 h | 24 h | Předvyplní termín, uživatel ho může změnit. |
-| Doporučený follow-up po dalším nedovolání | 30 s | 30 min | 12 h | Počet pokusů se čte z historie. |
+| Doporučený follow-up po 1. nedovolání | 60 s | 1 h | 24 h | Nabídne přesné doporučení, nebo vlastní minutový termín. |
+| Doporučený follow-up po dalším nedovolání | 30 s | 30 min | 12 h | Počet pokusů se čte z historie; přesné doporučení se nezaokrouhluje. |
 | Tolerance po termínu naplánovaného hovoru | 20 s | 1 h | 1 h | Po uplynutí jednou změní `call_later → to_call`; nevytvoří pokus a zachová zmeškaný termín. |
 | Termín schůzky uplyne | — | — | — | Schůzka se označí jako zmeškaná, stav se automaticky nemění. |
 
 Původní nekonečné obnovování zámku v „K provolání“ bylo odstraněno. Časové zpracování je idempotentní: opakované vyhodnocení stejné situace nevytváří další přesun ani událost.
+
+U výsledku „Nedovoláno“ jsou krátké zděděné intervaly zobrazené jako samostatná přesná volba a ukládají se na sekundy. Vlastní termín používá nativní `datetime-local` s minutovou přesností. Obě cesty se při potvrzení znovu ověřují proti aktuálnímu času; stejná podmínka je v čisté stavové logice.
 
 Všechny vstupy a výstupy termínů používají `Europe/Prague`. Převod odmítne neexistující lokální čas při změně na letní čas; testy pokrývají 23hodinový i 25hodinový den.
 
@@ -75,7 +79,7 @@ Stav se ukládá do `localStorage` pod verzovaným klíčem `obvolavani-portfoli
 ## Přístupnost
 
 - Všechny podstatné akce jsou dostupné tlačítky bez drag-and-drop.
-- Dialogy zachytávají focus, reagují na Escape a po zavření focus vracejí.
+- Dialogy zachytávají focus, reagují na Escape a po zavření focus vracejí. Při vnořeném formuláři je detail inertní a Escape zavře pouze horní vrstvu.
 - Formuláře mají popisky, chybové zprávy a textové významy stavů.
 - Viditelný focus a stavové štítky nevyjadřují informaci jen barvou.
 - Rozhraní se skládá od telefonu přes tablet po široký desktop.

@@ -9,6 +9,16 @@ const dateTimeFormatter = new Intl.DateTimeFormat("cs-CZ", {
   minute: "2-digit",
 });
 
+const dateTimeWithSecondsFormatter = new Intl.DateTimeFormat("cs-CZ", {
+  timeZone: PRAGUE_TIME_ZONE,
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+});
+
 const dayFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: PRAGUE_TIME_ZONE,
   year: "numeric",
@@ -68,12 +78,30 @@ export function formatPragueDateTime(timestamp: number): string {
   return dateTimeFormatter.format(timestamp).replace(",", " ·");
 }
 
+export function formatPragueDateTimePrecise(timestamp: number): string {
+  const formatter = timestamp % 60_000 === 0 ? dateTimeFormatter : dateTimeWithSecondsFormatter;
+  return formatter.format(timestamp).replace(",", " ·");
+}
+
 export function formatPragueTime(timestamp: number): string {
   return new Intl.DateTimeFormat("cs-CZ", {
     timeZone: PRAGUE_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
   }).format(timestamp);
+}
+
+export function formatPragueTimeWithSeconds(timestamp: number): string {
+  return new Intl.DateTimeFormat("cs-CZ", {
+    timeZone: PRAGUE_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(timestamp);
+}
+
+export function ceilToMinute(timestamp: number): number {
+  return Math.ceil(timestamp / 60_000) * 60_000;
 }
 
 export function pragueDayKey(timestamp: number): string {

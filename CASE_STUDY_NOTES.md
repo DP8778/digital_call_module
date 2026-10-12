@@ -42,9 +42,13 @@ Zvolené řešení ponechává Kanban jako sekundární přehled a přidává pr
 
 - Stav, další aktivita a historie jsou tři samostatné části modelu.
 - Počet pokusů se odvozuje pouze ze zaznamenané historie hovorů.
-- Zmeškané, dnešní, pozdější a nenaplánované aktivity jsou textově oddělené.
+- Zmeškané aktivity se určují vůči skutečnému času, takže dnešní prošlý termín nezůstává ve skupině „Dnes“.
+- Zmeškané, dnešní, pozdější a nenaplánované aktivity jsou textově oddělené; souhrn zvlášť ukazuje práci vyžadující zásah právě teď.
 - Záznam výsledku používá čtyři konkrétní možnosti s konzistentním mapováním na stav.
 - Samostatné plánování výslovně nemění stav.
+- Krátké zděděné doporučení pro tipaře se ukládá přesně na sekundy; vlastní termín zůstává minutový a rozdíl je v dialogu vysvětlený.
+- Koncové stavy neumožňují plánování. Změna stavu rušící termín vyžaduje potvrzení a vytváří historickou událost.
+- Po výsledku zůstává uživatel v detailu s potvrzením nového stavu a dalšího kroku a může se vědomě vrátit do fronty.
 - Kontakty jsou nevolatelné, syntetické a viditelně označené.
 - Všechny klíčové akce fungují klávesnicí bez drag-and-drop.
 
@@ -54,11 +58,12 @@ Výchozí dataset obsahuje aktivní dnešní hovory, zmeškaný hovor, dnešní 
 
 ## Co bylo skutečně ověřeno
 
-- Automatické testy čisté logiky: povolený i zakázaný přesun, vznik pokusu, plánování bez změny stavu, jednorázová expirace a obnova uloženého dema.
-- Automatické testy pražského času včetně změn letního/zimního času.
-- Automatické testy: 9/9 prošlo ve dvou testovacích souborech.
+- Automatické testy čisté logiky: povolený i zakázaný přesun, vznik pokusu, plánování bez změny stavu, zákaz plánování v koncovém stavu, auditované zrušení aktivity, validace minulého termínu, přesné krátké doporučení, jednorázová expirace a obnova uloženého dema.
+- Automatické testy řazení fronty: dnešní prošlý termín, budoucí dnešní termín, hranice půlnoci a české tvary počtů.
+- Automatické testy pražského času včetně půlnoci a změn letního/zimního času.
+- Automatické testy: 19/19 prošlo ve třech testovacích souborech.
 - TypeScript (`tsc --noEmit`), ESLint a produkční Next.js build prošly bez chyby.
-- Produkční server v lokálním smoke testu vrátil HTTP 200 a správný titul stránky.
+- Lokální vývojový server ve smoke testu vrátil HTTP 200 a správný titul stránky.
 
 ## Co ještě ověřeno není
 
@@ -66,7 +71,8 @@ Výchozí dataset obsahuje aktivní dnešní hovory, zmeškaný hovor, dnešní 
 - Srozumitelnost zdrojových intervalů proti původnímu zadání.
 - Reálný výkon v provozu, týmová synchronizace a integrace.
 - Obchodní dopad, rychlost práce nebo snížení chybovosti.
-- Ruční průchod asistivní technologií; automatická implementace focusu nenahrazuje test se screen readerem.
+- Ruční průchod ve viewports 375, 768 a 1440 px, protože v implementačním prostředí nebylo dostupné ovládání prohlížeče.
+- Ruční ověření Tab, Shift+Tab a postupného Escape ve skutečném prohlížeči ani průchod asistivní technologií; implementace focus trapu a inertní spodní vrstvy nenahrazuje test se screen readerem.
 
 ## Obrazovky vhodné pro case study
 

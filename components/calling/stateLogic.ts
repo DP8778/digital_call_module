@@ -1,6 +1,8 @@
 import { COLUMN_LABEL_CS, isMoveAllowed } from "./allowedMoves";
 import { DEMO_SCHEMA_VERSION, DEMO_STORAGE_KEY } from "./demoConstants";
+import { ACTIVITY_LABEL } from "./labels";
 import { createDemoState } from "./mockContacts";
+import { formatPragueDateTimePrecise } from "./time";
 import type {
   Contact,
   ContactSource,
@@ -73,6 +75,15 @@ export function moveContact(
     label: `Stav změněn: ${COLUMN_LABEL_CS[target]}`,
   };
   const clearsActivity = target === "backlog" || target === "listed" || target === "disqualified";
+  const cancelledActivity: TimelineEntry | null = clearsActivity && contact.nextActivity
+    ? {
+        id: eventId(contact.id, now, "activity-cancelled"),
+        at: now,
+        type: "activity_cancelled",
+        label: "Příští aktivita zrušena při změně stavu",
+        note: `${ACTIVITY_LABEL[contact.nextActivity.type]} · ${formatPragueDateTimePrecise(contact.nextActivity.dueAt)}`,
+      }
+    : null;
   return replaceContact(
     state,
     {
@@ -80,7 +91,7 @@ export function moveContact(
       status: target,
       statusUpdatedAt: now,
       nextActivity: clearsActivity ? null : contact.nextActivity,
-      history: [event, ...contact.history],
+      history: [event, ...(cancelledActivity ? [cancelledActivity] : []), ...contact.history],
     },
     now,
   );
@@ -93,13 +104,21 @@ export function scheduleActivity(
   now: number,
 ): DemoState {
   const contact = state.contacts.find((item) => item.id === contactId);
-  if (!contact || input.dueAt <= now || !Number.isFinite(input.dueAt)) return state;
+  if (
+    !contact ||
+    contact.status === "listed" ||
+    contact.status === "disqualified" ||
+    input.dueAt <= now ||
+    !Number.isFinite(input.dueAt)
+  ) return state;
   const typeLabel = input.activityType === "call" ? "hovor" : "schůzka";
   const event: TimelineEntry = {
     id: eventId(contact.id, now, "schedule"),
     at: now,
     type: "activity_scheduled",
-    label: `Naplánována další aktivita: ${typeLabel}`,
+    label: contact.nextActivity
+      ? `Termín další aktivity upraven: ${typeLabel}`
+      : `Naplánována další aktivita: ${typeLabel}`,
   };
   return replaceContact(
     state,
@@ -132,12 +151,14 @@ export function recordCallOutcome(
       : "call_later";
   if (!isMoveAllowed(contact.status, target)) return state;
 
-  const needsDate = input.outcome === "meeting_booked" || input.outcome === "call_later";
-  if (needsDate && (!input.scheduledAt || input.scheduledAt <= now)) return state;
-
   const scheduledAt = input.outcome === "no_answer"
     ? input.scheduledAt ?? getRecommendedFollowUpAt(contact, now)
     : input.scheduledAt;
+  const createsNextActivity = input.outcome !== "disqualified";
+  if (
+    createsNextActivity &&
+    (!scheduledAt || !Number.isFinite(scheduledAt) || scheduledAt <= now)
+  ) return state;
   const activityType = input.outcome === "meeting_booked" ? "meeting" : "call";
   const attempt: TimelineEntry = {
     id: eventId(contact.id, now, "attempt"),
@@ -153,6 +174,15 @@ export function recordCallOutcome(
     type: "status_change",
     label: `Stav změněn: ${COLUMN_LABEL_CS[target]}`,
   };
+  const completedActivity: TimelineEntry | null = contact.nextActivity
+    ? {
+        id: eventId(contact.id, now, "activity-completed"),
+        at: now,
+        type: "activity_completed",
+        label: "Předchozí aktivita uzavřena zaznamenaným výsledkem",
+        note: `${ACTIVITY_LABEL[contact.nextActivity.type]} · ${formatPragueDateTimePrecise(contact.nextActivity.dueAt)}`,
+      }
+    : null;
 
   return replaceContact(
     state,
@@ -168,7 +198,7 @@ export function recordCallOutcome(
               type: activityType,
               dueAt: scheduledAt,
             },
-      history: [statusEvent, attempt, ...contact.history],
+      history: [statusEvent, attempt, ...(completedActivity ? [completedActivity] : []), ...contact.history],
     },
     now,
   );

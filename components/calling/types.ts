@@ -20,7 +20,14 @@ export type NextActivity = {
 export type TimelineEntry = {
   id: string;
   at: number;
-  type: "created" | "call_attempt" | "status_change" | "activity_scheduled" | "note";
+  type:
+    | "created"
+    | "call_attempt"
+    | "status_change"
+    | "activity_scheduled"
+    | "activity_cancelled"
+    | "activity_completed"
+    | "note";
   label: string;
   note?: string;
   outcome?: CallOutcome;
@@ -59,4 +66,10 @@ export type OutcomeInput = {
 export type ScheduleInput = {
   activityType: ActivityType;
   dueAt: number;
+};
+
+export type ActionFeedback = {
+  title: string;
+  description: string;
+  nextStep?: string;
 };
