@@ -1,31 +1,33 @@
 import type { ColumnId } from "./types";
 
-/** Jediný zdroj pravdy pro povolené přesuny mezi sloupci (uživatelské akce + DnD + menu). */
+/** Zachované procesní přechody původního prototypu. */
 export const allowedMoves: Record<ColumnId, ColumnId[]> = {
   backlog: ["to_call"],
-
   to_call: ["backlog", "call_later", "meeting", "disqualified"],
-
   call_later: ["to_call", "meeting", "disqualified"],
-
   meeting: ["disqualified", "listed"],
-
   disqualified: [],
-
   listed: [],
 };
 
 export function isMoveAllowed(source: ColumnId, target: ColumnId): boolean {
-  if (source === target) return false;
-  return allowedMoves[source]?.includes(target) ?? false;
+  return source !== target && allowedMoves[source].includes(target);
 }
 
-/** České názvy pro menu a UI */
 export const COLUMN_LABEL_CS: Record<ColumnId, string> = {
   backlog: "Zásobník",
-  to_call: "Kontakty k provolání",
+  to_call: "K provolání",
   call_later: "Volat později",
-  meeting: "Domluvené schůzky",
-  listed: "Nabrané nemovitosti",
-  disqualified: "Vyřazené kontakty",
+  meeting: "Domluvená schůzka",
+  listed: "Nabraná nemovitost",
+  disqualified: "Vyřazeno",
+};
+
+export const COLUMN_DESCRIPTION_CS: Record<ColumnId, string> = {
+  backlog: "Nové kontakty bez zahájeného zpracování",
+  to_call: "Kontakty připravené k dalšímu hovoru",
+  call_later: "Kontakty s hovorem naplánovaným na později",
+  meeting: "Kontakty s domluvenou schůzkou",
+  listed: "Úspěšně dokončená část procesu",
+  disqualified: "Kontakty vyřazené z dalšího zpracování",
 };

@@ -1,187 +1,102 @@
 "use client";
 
-import {
-  DndContext,
-  DragOverlay,
-  type DragEndEvent,
-  type DragStartEvent,
-} from "@dnd-kit/core";
+import { KanbanSquare, ListTodo, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { columnContainerPointerCollision, dropTargetColumnId } from "./columnPointerCollision";
-import { isMoveAllowed } from "./allowedMoves";
-import Backlog from "./backlog/Backlog";
-import KanbanBoard from "./kanban/KanbanBoard";
-import type { ColumnId, Contact } from "./types";
+import ContactDetail from "./ContactDetail";
+import OutcomeModal from "./OutcomeModal";
+import ProcessBoard from "./ProcessBoard";
 import ScheduleModal from "./ScheduleModal";
+import TodayView from "./TodayView";
+import type { ColumnId, Contact } from "./types";
 import { useCallingBoardState } from "./useCallingBoardState";
+
+type View = "today" | "process";
 
 export default function CallingModuleLayout() {
   const board = useCallingBoardState();
-  const [mounted, setMounted] = useState(false);
-  const [activeContactId, setActiveContactId] = useState<string | null>(null);
-  const [dragSourceColumnId, setDragSourceColumnId] = useState<ColumnId | null>(null);
-  const [scheduleModalData, setScheduleModalData] = useState<{
-    contact: Contact;
-    targetColumn: "meeting" | "call_later";
-  } | null>(null);
+  const [view, setView] = useState<View>("today");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [outcomeOpen, setOutcomeOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  const [announcement, setAnnouncement] = useState("");
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
   }, []);
 
-  const activeContact = useMemo<Contact | null>(() => {
-    if (!activeContactId) return null;
-    const all = Object.values(board.columns).flat();
-    return all.find((c) => c.id === activeContactId) ?? null;
-  }, [activeContactId, board.columns]);
+  const selectedContact = useMemo(
+    () => board.state?.contacts.find((contact) => contact.id === selectedId) ?? null,
+    [board.state, selectedId],
+  );
 
-  function getContactColumnId(contactId: string): ColumnId | null {
-    for (const [columnId, items] of Object.entries(board.columns) as [ColumnId, Contact[]][]) {
-      if (items.some((c) => c.id === contactId)) return columnId;
-    }
-    return null;
+  function openContact(contact: Contact) {
+    setSelectedId(contact.id);
+    setNow(Date.now());
   }
 
-  function getContactById(contactId: string): Contact | null {
-    for (const items of Object.values(board.columns)) {
-      const found = items.find((c) => c.id === contactId);
-      if (found) return found;
-    }
-    return null;
+  function moveSelected(target: ColumnId) {
+    if (!selectedContact) return;
+    board.moveContact(selectedContact.id, target);
+    setAnnouncement("Stav kontaktu byl změněn.");
   }
 
-  function handleDragStart(event: DragStartEvent) {
-    setActiveContactId(String(event.active.id));
-    const sourceColumnId = event.active.data.current?.columnId as ColumnId | undefined;
-    setDragSourceColumnId(sourceColumnId ?? null);
+  function resetDemo() {
+    if (!window.confirm("Obnovit výchozí demo? Všechny lokálně provedené změny budou nahrazeny.")) return;
+    board.resetDemo();
+    setSelectedId(null);
+    setAnnouncement("Demo bylo obnoveno do výchozího stavu.");
   }
 
-  function handleDragCancel() {
-    setActiveContactId(null);
-    setDragSourceColumnId(null);
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    const contactId = String(event.active.id);
-    const targetColumnId = dropTargetColumnId(event.over);
-
-    setActiveContactId(null);
-    setDragSourceColumnId(null);
-
-    const sourceColumnId = getContactColumnId(contactId);
-    if (!sourceColumnId) return;
-
-    if (sourceColumnId === "backlog") {
-      if (targetColumnId !== "to_call") return;
-      if (!isMoveAllowed("backlog", "to_call")) return;
-      board.onDragEnd(
-        contactId,
-        { columnId: sourceColumnId },
-        { columnId: "to_call" },
-      );
-      return;
-    }
-
-    if (!targetColumnId) return;
-
-    if (targetColumnId === "meeting" || targetColumnId === "call_later") {
-      if (!isMoveAllowed(sourceColumnId, targetColumnId)) return;
-
-      const contact = getContactById(contactId);
-      if (!contact) return;
-
-      setScheduleModalData({
-        contact,
-        targetColumn: targetColumnId,
-      });
-      return;
-    }
-
-    if (!isMoveAllowed(sourceColumnId, targetColumnId)) return;
-
-    board.onDragEnd(
-      contactId,
-      { columnId: sourceColumnId },
-      { columnId: targetColumnId },
+  if (!board.state) {
+    return (
+      <div className="mx-auto w-full max-w-6xl animate-pulse px-4 py-8 sm:px-6" aria-label="Načítání dema">
+        <div className="h-7 w-56 rounded-lg bg-slate-200" />
+        <div className="mt-3 h-4 w-96 max-w-full rounded bg-slate-100" />
+        <div className="mt-8 h-20 rounded-2xl bg-white shadow-sm" />
+        <div className="mt-6 space-y-3"><div className="h-28 rounded-2xl bg-white" /><div className="h-28 rounded-2xl bg-white" /></div>
+      </div>
     );
   }
 
-  if (!mounted) {
-    return null;
-  }
-
   return (
-    <DndContext
-      collisionDetection={columnContainerPointerCollision}
-      onDragStart={handleDragStart}
-      onDragCancel={handleDragCancel}
-      onDragEnd={handleDragEnd}
-    >
-      {/*
-        Mobil: sloupec — Backlog nahoře, Kanban dole, min. výška viewportu, bez fixního h-screen.
-        Tablet (md): řádek 40/60, stále < lg bez fixního h-screen.
-        Desktop (lg): h-screen + overflow-hidden, scroll jen uvnitř sloupců.
-      */}
-      <div className="flex w-full min-h-screen flex-col bg-zinc-50 dark:bg-[#1f2937] md:flex-row lg:h-screen lg:min-h-0 lg:overflow-hidden">
-        <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col border-b border-zinc-200 md:w-[40%] md:flex-none md:border-b-0 md:border-r md:border-zinc-200 dark:border-zinc-700 lg:h-full lg:w-[40%]">
-          <header className="shrink-0 border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
-            <h1 className="truncate text-sm font-semibold text-zinc-900 dark:text-[#f9fafb]">
-              Modul pro obvolávání
-            </h1>
-            
-          </header>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <Backlog
-              contacts={board.columns.backlog}
-              dragSourceColumnId={dragSourceColumnId}
-              onMoveContact={board.moveContact}
-            />
-          </div>
-        </div>
-        <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden md:w-[60%] md:flex-none lg:h-full lg:w-[60%]">
-          <KanbanBoard
-            columns={board.columns}
-            dragSourceColumnId={dragSourceColumnId}
-            onMoveContact={board.moveContact}
-            onRequestSchedule={(contact, targetColumn) =>
-              setScheduleModalData({ contact, targetColumn })
-            }
-          />
+    <>
+      <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
+          <nav aria-label="Hlavní zobrazení" className="flex rounded-xl bg-slate-100 p-1">
+            <button type="button" onClick={() => setView("today")} aria-current={view === "today" ? "page" : undefined} className={`focus-ring flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-semibold ${view === "today" ? "bg-white text-slate-950 shadow-sm" : "text-slate-600 hover:text-slate-950"}`}><ListTodo className="size-4" aria-hidden="true" />K řešení</button>
+            <button type="button" onClick={() => setView("process")} aria-current={view === "process" ? "page" : undefined} className={`focus-ring flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-semibold ${view === "process" ? "bg-white text-slate-950 shadow-sm" : "text-slate-600 hover:text-slate-950"}`}><KanbanSquare className="size-4" aria-hidden="true" />Proces</button>
+          </nav>
+          <button type="button" onClick={resetDemo} className="focus-ring flex h-9 items-center gap-2 rounded-lg px-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-950"><RotateCcw className="size-4" aria-hidden="true" /><span className="hidden sm:inline">Obnovit demo</span></button>
         </div>
       </div>
 
-      <DragOverlay>
-        {activeContact ? (
-          <div className="w-[320px] rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-600 dark:bg-[#111827]">
-            <div className="truncate text-sm font-semibold text-zinc-900 dark:text-[#f9fafb]">
-              {activeContact.name}
-            </div>
-            <div className="mt-1 truncate text-xs text-zinc-700 dark:text-zinc-300">
-              <span className="text-zinc-500 dark:text-zinc-400">Tel.:</span>{" "}
-              <span className="font-medium text-zinc-900 dark:text-[#f9fafb]">
-                {activeContact.phone}
-              </span>
-            </div>
-          </div>
-        ) : null}
-      </DragOverlay>
+      {board.storageRecovered ? (
+        <div role="status" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4"><span>Uložená data nebyla kompatibilní nebo dostupná. Demo bylo bezpečně obnoveno.</span><button type="button" onClick={board.dismissStorageWarning} className="focus-ring shrink-0 rounded-lg px-2 py-1 font-semibold hover:bg-amber-100">Skrýt</button></div>
+        </div>
+      ) : null}
 
-      {scheduleModalData ? (
-        <ScheduleModal
-          isOpen={true}
-          onClose={() => setScheduleModalData(null)}
-          onConfirm={(timestamp) => {
-            board.scheduleMoveContact(
-              scheduleModalData.contact,
-              scheduleModalData.targetColumn,
-              timestamp,
-            );
-          }}
-          contact={scheduleModalData.contact}
-          targetColumn={scheduleModalData.targetColumn}
+      <div aria-live="polite" className="sr-only">{announcement}</div>
+      {view === "today" ? <TodayView contacts={board.state.contacts} now={now} onOpenContact={openContact} /> : <ProcessBoard contacts={board.state.contacts} now={now} onOpenContact={openContact} />}
+
+      {selectedContact ? (
+        <ContactDetail
+          contact={selectedContact}
+          now={now}
+          onClose={() => setSelectedId(null)}
+          onMove={moveSelected}
+          onRecordOutcome={() => { setNow(Date.now()); setOutcomeOpen(true); }}
+          onSchedule={() => { setNow(Date.now()); setScheduleOpen(true); }}
         />
       ) : null}
-    </DndContext>
+      {selectedContact && outcomeOpen ? (
+        <OutcomeModal contact={selectedContact} now={now} onClose={() => setOutcomeOpen(false)} onSubmit={(input) => { board.recordOutcome(selectedContact.id, input); setAnnouncement("Výsledek hovoru a další krok byly uloženy."); }} />
+      ) : null}
+      {selectedContact && scheduleOpen ? (
+        <ScheduleModal contact={selectedContact} now={now} onClose={() => setScheduleOpen(false)} onSubmit={(input) => { board.scheduleActivity(selectedContact.id, input); setAnnouncement("Termín další aktivity byl uložen."); }} />
+      ) : null}
+    </>
   );
 }

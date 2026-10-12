@@ -1,98 +1,46 @@
 "use client";
 
-import type { Contact } from "./types";
-import { useEffect, useMemo, useState } from "react";
+import { useId, useState } from "react";
+import AccessibleModal from "./AccessibleModal";
+import { addPragueCalendarDays, parsePragueDateTime, toPragueDateTimeInput } from "./time";
+import type { ActivityType, Contact, ScheduleInput } from "./types";
 
-type ScheduleModalProps = {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: (timestamp: number) => void;
-  contact: Contact;
-  targetColumn: "meeting" | "call_later";
-};
+export default function ScheduleModal({ contact, now, onClose, onSubmit }: { contact: Contact; now: number; onClose: () => void; onSubmit: (input: ScheduleInput) => void }) {
+  const [activityType, setActivityType] = useState<ActivityType>(contact.nextActivity?.type ?? "call");
+  const [value, setValue] = useState(() => toPragueDateTimeInput(contact.nextActivity?.dueAt ?? addPragueCalendarDays(now, 1, 9)));
+  const [error, setError] = useState("");
+  const dateId = useId();
 
-function toDateTimeLocalValue(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-    date.getDate(),
-  )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-export default function ScheduleModal({
-  isOpen,
-  onClose,
-  onConfirm,
-  contact,
-  targetColumn,
-}: ScheduleModalProps) {
-  const defaultValue = useMemo(() => toDateTimeLocalValue(new Date()), []);
-  const [value, setValue] = useState<string>(defaultValue);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setValue(toDateTimeLocalValue(new Date()));
-  }, [isOpen]);
-
-  function handleConfirm() {
-    const parsed = new Date(value);
-    const ts = parsed.getTime();
-    if (Number.isNaN(ts)) return;
-    onConfirm(ts);
-    onClose();
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    const dueAt = parsePragueDateTime(value);
+    if (!dueAt || dueAt <= now) { setError("Zadejte platný budoucí termín v časovém pásmu Europe/Prague."); return; }
+    onSubmit({ activityType, dueAt }); onClose();
   }
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 dark:bg-black/60"
-      onMouseDown={onClose}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div
-        className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:border dark:border-zinc-600 dark:bg-[#111827]"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <header className="mb-4">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-[#f9fafb]">
-            {contact.name} – Naplánovat přesun do {targetColumn}
-          </h2>
-        </header>
-
-        <div className="mb-6">
-          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Datum a čas
-          </label>
-          <input
-            className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-[#f9fafb] dark:focus:border-zinc-500 dark:focus:ring-zinc-700"
-            type="datetime-local"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-          />
+    <AccessibleModal title={contact.nextActivity ? "Upravit další aktivitu" : "Naplánovat další aktivitu"} description={`Termín nemění procesní stav kontaktu ${contact.name}.`} onClose={onClose}>
+      <form onSubmit={handleSubmit} className="space-y-5 p-5 sm:p-6">
+        <fieldset>
+          <legend className="text-sm font-semibold text-slate-900">Typ aktivity</legend>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {(["call", "meeting"] as ActivityType[]).map((type) => (
+              <label key={type} className={`focus-within:ring-2 focus-within:ring-teal-600/30 flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-sm font-medium ${activityType === type ? "border-teal-500 bg-teal-50 text-teal-900" : "border-slate-200 text-slate-700"}`}>
+                <input type="radio" name="activity-type" checked={activityType === type} onChange={() => setActivityType(type)} className="accent-teal-700" />
+                {type === "call" ? "Hovor" : "Schůzka"}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <div>
+          <label htmlFor={dateId} className="text-sm font-semibold text-slate-900">Datum a čas</label>
+          <input id={dateId} type="datetime-local" value={value} onChange={(event) => { setValue(event.target.value); setError(""); }} className="focus-ring mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" aria-invalid={Boolean(error)} aria-describedby={`${dateId}-hint ${error ? `${dateId}-error` : ""}`} />
+          <p id={`${dateId}-hint`} className="mt-1.5 text-xs text-slate-500">Čas je interpretován a zobrazen pro Europe/Prague.</p>
+          {error ? <p id={`${dateId}-error`} role="alert" className="mt-1.5 text-sm font-medium text-rose-700">{error}</p> : null}
         </div>
-
-        <div className="flex items-center justify-end gap-3">
-          <button
-            type="button"
-            className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 active:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 dark:active:bg-zinc-600"
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={onClose}
-          >
-            Zrušit
-          </button>
-          <button
-            type="button"
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-zinc-800 active:bg-zinc-950 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white dark:active:bg-zinc-200"
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={handleConfirm}
-          >
-            Potvrdit
-          </button>
-        </div>
-      </div>
-    </div>
+        <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm leading-relaxed text-blue-900">Uložení termínu pouze upraví příští aktivitu. Stav kontaktu změníte samostatně nebo při zaznamenání výsledku hovoru.</div>
+        <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end"><button type="button" onClick={onClose} className="button-secondary">Zrušit</button><button type="submit" className="button-primary">Uložit termín</button></div>
+      </form>
+    </AccessibleModal>
   );
 }
-

@@ -1,12 +1,32 @@
-export type ColumnType =
+export type ColumnId =
+  | "backlog"
   | "to_call"
-  | "meeting"
   | "call_later"
+  | "meeting"
   | "listed"
   | "disqualified";
 
-/** Identifikátor sloupce včetně zásobníku (backlog není Kanban sloupec). */
-export type ColumnId = ColumnType | "backlog";
+export type ColumnType = Exclude<ColumnId, "backlog">;
+
+export type ContactSource = "inzerce" | "tipar" | "fb" | "callcentrum";
+export type ActivityType = "call" | "meeting";
+
+export type NextActivity = {
+  id: string;
+  type: ActivityType;
+  dueAt: number;
+};
+
+export type TimelineEntry = {
+  id: string;
+  at: number;
+  type: "created" | "call_attempt" | "status_change" | "activity_scheduled" | "note";
+  label: string;
+  note?: string;
+  outcome?: CallOutcome;
+};
+
+export type CallOutcome = "no_answer" | "meeting_booked" | "call_later" | "disqualified";
 
 export type Contact = {
   id: string;
@@ -16,19 +36,27 @@ export type Contact = {
   type: "prodej" | "pronajem";
   subtype: string;
   city: string;
-  source: "inzerce" | "tipar" | "fb" | "callcentrum";
-  /** Zobrazení času v kartě (typicky HH:MM). */
-  time: string;
-  /** Datum a čas vytvoření záznamu v systému (YYYY-MM-DD HH:MM). */
-  createdAt: string;
-  // Time-based lock handling (timestamp in ms). When set, contact is considered locked until that time.
-  lockedUntil?: number;
-  // Timestamp (ms) for when the contact was last moved to the current column.
-  statusUpdatedAt?: number;
-  // Timestamp (ms) representing when a move into a scheduled column should happen.
+  source: ContactSource;
+  status: ColumnId;
+  createdAt: number;
+  statusUpdatedAt: number;
+  nextActivity: NextActivity | null;
+  history: TimelineEntry[];
+};
+
+export type DemoState = {
+  schemaVersion: number;
+  updatedAt: number;
+  contacts: Contact[];
+};
+
+export type OutcomeInput = {
+  outcome: CallOutcome;
+  note: string;
   scheduledAt?: number;
-  // Number of attempts made when moving the contact into to_call.
-  attemptCount?: number;
-  /** Tipař v call_later: wall-clock okamžik auto-přesunu (scheduledAt + 20 s, nebo now + 20 s při zpětném termínu). */
-  tiparLaterGraceEndsAt?: number;
+};
+
+export type ScheduleInput = {
+  activityType: ActivityType;
+  dueAt: number;
 };
