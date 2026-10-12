@@ -97,12 +97,12 @@ export default function OutcomeModal({ contact, now, onClose, onSubmit }: { cont
     <AccessibleModal title="Zaznamenat výsledek" description={`Kontakt: ${contact.name}`} onClose={onClose} layer="nested">
       <form onSubmit={handleSubmit} className="space-y-5 p-5 sm:p-6">
         <fieldset>
-          <legend className="mb-2 text-sm font-semibold text-slate-900">Jak hovor dopadl?</legend>
+          <legend className="text-main mb-2 text-sm font-semibold">Jak hovor dopadl?</legend>
           <div className="grid gap-2">
             {OPTIONS.map((option) => (
-              <label key={option.value} className={`flex cursor-pointer gap-3 rounded-xl border p-3 focus-within:ring-2 focus-within:ring-teal-600/30 ${outcome === option.value ? "border-teal-500 bg-teal-50" : "border-slate-200 hover:bg-slate-50"}`}>
-                <input type="radio" name={groupName} value={option.value} checked={outcome === option.value} onChange={() => selectOutcome(option.value)} className="mt-1 accent-teal-700" />
-                <span><span className="block text-sm font-semibold text-slate-900">{option.label}</span><span className="mt-0.5 block text-xs leading-relaxed text-slate-500">{option.description}</span></span>
+              <label key={option.value} data-selected={outcome === option.value} className="choice-card flex cursor-pointer gap-3 p-3 focus-within:ring-2 focus-within:ring-[var(--dc-focus)]/30">
+                <input type="radio" name={groupName} value={option.value} checked={outcome === option.value} onChange={() => selectOutcome(option.value)} className="mt-1 accent-[var(--dc-accent)]" />
+                <span><span className="text-main block text-sm font-semibold">{option.label}</span><span className="text-muted mt-0.5 block text-xs leading-relaxed">{option.description}</span></span>
               </label>
             ))}
           </div>
@@ -110,15 +110,15 @@ export default function OutcomeModal({ contact, now, onClose, onSubmit }: { cont
 
         {outcome === "no_answer" ? (
           <fieldset>
-            <legend className="text-sm font-semibold text-slate-900">Kdy se ozvat znovu?</legend>
+            <legend className="text-main text-sm font-semibold">Kdy se ozvat znovu?</legend>
             <div className="mt-2 grid gap-2">
-              <label className={`flex cursor-pointer gap-3 rounded-xl border p-3 focus-within:ring-2 focus-within:ring-teal-600/30 ${useRecommended ? "border-teal-500 bg-teal-50" : "border-slate-200"}`}>
-                <input type="radio" name="follow-up-mode" checked={useRecommended} onChange={() => { setUseRecommended(true); setError(""); }} className="mt-1 accent-teal-700" />
-                <span className="min-w-0"><span className="flex items-center gap-1.5 text-sm font-semibold text-slate-900"><Clock3 className="size-4 text-teal-700" aria-hidden="true" />Použít přesné doporučení</span><span className="mt-1 block text-sm text-slate-700">Za {formatDelay(exactDelaySeconds)} · {relativeDayLabel(recommendedAt, clockNow)} · přesně {formatPragueTimeWithSeconds(recommendedAt)}</span><span className="mt-1 block text-xs leading-relaxed text-slate-500">Zděděný, dosud nepotvrzený interval z původního prototypu. Uloží se přesně na sekundy.</span></span>
+              <label data-selected={useRecommended} className="choice-card flex cursor-pointer gap-3 p-3 focus-within:ring-2 focus-within:ring-[var(--dc-focus)]/30">
+                <input type="radio" name="follow-up-mode" checked={useRecommended} onChange={() => { setUseRecommended(true); setError(""); }} className="mt-1 accent-[var(--dc-accent)]" />
+                <span className="min-w-0"><span className="text-main flex items-center gap-1.5 text-sm font-semibold"><Clock3 className="size-4 text-[var(--dc-accent)]" aria-hidden="true" />Použít přesné doporučení</span><span className="text-main mt-1 block text-sm">Za {formatDelay(exactDelaySeconds)} · {relativeDayLabel(recommendedAt, clockNow)} · přesně {formatPragueTimeWithSeconds(recommendedAt)}</span><span className="text-muted mt-1 block text-xs leading-relaxed">Zděděný, dosud nepotvrzený interval z původního prototypu. Uloží se přesně na sekundy.</span></span>
               </label>
-              <label className={`flex cursor-pointer gap-3 rounded-xl border p-3 focus-within:ring-2 focus-within:ring-teal-600/30 ${!useRecommended ? "border-teal-500 bg-teal-50" : "border-slate-200"}`}>
-                <input type="radio" name="follow-up-mode" checked={!useRecommended} onChange={() => { setUseRecommended(false); setDateValue(toPragueDateTimeInput(ceilToMinute(Math.max(recommendedAt, clockNow + 60_000)))); setError(""); }} className="mt-1 accent-teal-700" />
-                <span><span className="block text-sm font-semibold text-slate-900">Zvolit vlastní termín</span><span className="mt-1 block text-xs text-slate-500">Vlastní termín se zadává s přesností na minuty.</span></span>
+              <label data-selected={!useRecommended} className="choice-card flex cursor-pointer gap-3 p-3 focus-within:ring-2 focus-within:ring-[var(--dc-focus)]/30">
+                <input type="radio" name="follow-up-mode" checked={!useRecommended} onChange={() => { setUseRecommended(false); setDateValue(toPragueDateTimeInput(ceilToMinute(Math.max(recommendedAt, clockNow + 60_000)))); setError(""); }} className="mt-1 accent-[var(--dc-accent)]" />
+                <span><span className="text-main block text-sm font-semibold">Zvolit vlastní termín</span><span className="text-muted mt-1 block text-xs">Vlastní termín se zadává s přesností na minuty.</span></span>
               </label>
             </div>
           </fieldset>
@@ -126,25 +126,25 @@ export default function OutcomeModal({ contact, now, onClose, onSubmit }: { cont
 
         {showsCustomDate ? (
           <div>
-            <label htmlFor={dateId} className="text-sm font-semibold text-slate-900">{dateLabel}</label>
-            <input id={dateId} type="datetime-local" value={dateValue} onChange={(event) => { setDateValue(event.target.value); setError(""); }} className="focus-ring mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" aria-describedby={`${dateId}-hint ${error ? `${dateId}-error` : ""}`} aria-invalid={Boolean(error)} />
-            <p id={`${dateId}-hint`} className="mt-1.5 text-xs text-slate-500">Termín musí být v budoucnosti. Zobrazení: Praha.</p>
+            <label htmlFor={dateId} className="text-main text-sm font-semibold">{dateLabel}</label>
+            <input id={dateId} type="datetime-local" value={dateValue} onChange={(event) => { setDateValue(event.target.value); setError(""); }} className="field mt-2 h-11 w-full px-3 text-sm" aria-describedby={`${dateId}-hint ${error ? `${dateId}-error` : ""}`} aria-invalid={Boolean(error)} />
+            <p id={`${dateId}-hint`} className="text-muted mt-1.5 text-xs">Termín musí být v budoucnosti. Zobrazení: Praha.</p>
           </div>
         ) : null}
 
         {error ? (
-          <div id={`${dateId}-error`} role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-800">
+          <div id={`${dateId}-error`} role="alert" className="tone-danger rounded-xl border p-3 text-sm font-medium">
             {error}
-            {outcome === "no_answer" && useRecommended ? <button type="button" onClick={() => refreshRecommendation(clockNow)} className="focus-ring ml-2 rounded px-1 underline underline-offset-2">Obnovit doporučení</button> : null}
+            {outcome === "no_answer" && useRecommended ? <button type="button" onClick={() => refreshRecommendation(clockNow)} className="focus-ring ml-2 rounded px-1 font-semibold underline underline-offset-2">Obnovit doporučení</button> : null}
           </div>
         ) : null}
 
         <div>
-          <label htmlFor={noteId} className="text-sm font-semibold text-slate-900">Krátká poznámka <span className="font-normal text-slate-400">(volitelné)</span></label>
-          <textarea id={noteId} value={note} onChange={(event) => setNote(event.target.value)} rows={3} maxLength={280} placeholder="Co bude užitečné vědět při dalším kontaktu?" className="focus-ring mt-2 w-full resize-y rounded-xl border border-slate-200 px-3 py-2.5 text-sm" />
-          <div className="mt-1 text-right text-xs text-slate-400">{note.length}/280</div>
+          <label htmlFor={noteId} className="text-main text-sm font-semibold">Krátká poznámka <span className="text-muted font-normal">(volitelné)</span></label>
+          <textarea id={noteId} value={note} onChange={(event) => setNote(event.target.value)} rows={3} maxLength={280} placeholder="Co bude užitečné vědět při dalším kontaktu?" className="field mt-2 w-full resize-y px-3 py-2.5 text-sm" />
+          <div className="text-faint mt-1 text-right text-xs">{note.length}/280</div>
         </div>
-        <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end"><button type="button" onClick={onClose} className="button-secondary">Zrušit</button><button type="submit" className="button-primary">Uložit výsledek</button></div>
+        <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end" style={{ borderColor: "var(--dc-border)" }}><button type="button" onClick={onClose} className="button-secondary">Zrušit</button><button type="submit" className="button-primary">Uložit výsledek</button></div>
       </form>
     </AccessibleModal>
   );

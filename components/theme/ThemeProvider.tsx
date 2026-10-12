@@ -4,8 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 
@@ -15,16 +14,30 @@ type ThemeContextValue = {
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
+const THEME_EVENT = "digital-call-theme-change";
+
+function subscribe(onStoreChange: () => void) {
+  window.addEventListener(THEME_EVENT, onStoreChange);
+  return () => window.removeEventListener(THEME_EVENT, onStoreChange);
+}
+
+function getThemeSnapshot() {
+  return document.documentElement.classList.contains("dark");
+}
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDark);
-  }, [isDark]);
+  const isDark = useSyncExternalStore(subscribe, getThemeSnapshot, () => false);
 
   const toggleTheme = useCallback(() => {
-    setIsDark((d) => !d);
+    const next = !document.documentElement.classList.contains("dark");
+    document.documentElement.classList.toggle("dark", next);
+    document.documentElement.style.colorScheme = next ? "dark" : "light";
+    try {
+      window.localStorage.setItem("digital-call-theme", next ? "dark" : "light");
+    } catch {
+      // Motiv zůstává funkční i v prohlížeči s blokovaným localStorage.
+    }
+    window.dispatchEvent(new Event(THEME_EVENT));
   }, []);
 
   return (

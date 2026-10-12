@@ -52,6 +52,16 @@ Zvolené řešení ponechává Kanban jako sekundární přehled a přidává pr
 - Kontakty jsou nevolatelné, syntetické a viditelně označené.
 - Všechny klíčové akce fungují klávesnicí bez drag-and-drop.
 
+## Vizuální iterace
+
+- Navigační a ovládací vrstva používá střídmý průsvitný materiál s krátkým blur efektem, světlou hranou a měkkým stínem. Obsahová vrstva zůstává neprůhledná, aby pracovní data nesoutěžila s efektem.
+- Světlý i tmavý motiv mají samostatné sémantické tokeny; tmavý režim není globální inverze. Přepínač je skutečně zapojený a preference se ukládá v prohlížeči.
+- Fronta zachovává husté řádky, ale zvýrazňuje současnou prioritu, aktivní filtry a zmeškanou skupinu textem i hranou.
+- Kanban má na úzkém viewportu lokalizovaný horizontální scroll, takže šest sloupců neroztahuje celou stránku.
+- Dialogy mají glass pouze v hlavičce; formuláře, potvrzení, chyby a historie používají stabilní obsahové plochy.
+- Reset dema používá vlastní potvrzovací dialog se stejnou vizuální a přístupnostní strukturou místo nestylovatelného systémového potvrzení.
+- Fallbacky pokrývají chybějící blur, omezenou průhlednost, vyšší kontrast, forced colors a omezený pohyb.
+
 ## Popis dema
 
 Výchozí dataset obsahuje aktivní dnešní hovory, zmeškaný hovor, dnešní a zmeškanou schůzku, budoucí follow-up, nové kontakty v zásobníku i koncové případy. Uživatel může hledat, filtrovat, otevřít detail, zaznamenat výsledek, upravit další aktivitu, změnit povolený stav, stránku obnovit a pokračovat.
@@ -64,6 +74,8 @@ Výchozí dataset obsahuje aktivní dnešní hovory, zmeškaný hovor, dnešní 
 - Automatické testy: 19/19 prošlo ve třech testovacích souborech.
 - TypeScript (`tsc --noEmit`), ESLint a produkční Next.js build prošly bez chyby.
 - Lokální vývojový server ve smoke testu vrátil HTTP 200 a správný titul stránky.
+- Vizuální redesign nezměnil čistou stavovou logiku, časová pravidla ani datové typy.
+- Výpočet kontrastu hlavních, sekundárních a stavových textových tokenů vyšel v obou motivech nejméně 5,0 : 1; nejde však o náhradu kontroly každé výsledné komponenty v prohlížeči.
 
 ## Co ještě ověřeno není
 
@@ -73,6 +85,7 @@ Výchozí dataset obsahuje aktivní dnešní hovory, zmeškaný hovor, dnešní 
 - Obchodní dopad, rychlost práce nebo snížení chybovosti.
 - Ruční průchod ve viewports 375, 768 a 1440 px, protože v implementačním prostředí nebylo dostupné ovládání prohlížeče.
 - Ruční ověření Tab, Shift+Tab a postupného Escape ve skutečném prohlížeči ani průchod asistivní technologií; implementace focus trapu a inertní spodní vrstvy nenahrazuje test se screen readerem.
+- Aktuální screenshoty redesignu nevznikly, protože prostředí nemělo nástroj pro řízený prohlížeč.
 
 ## Obrazovky vhodné pro case study
 

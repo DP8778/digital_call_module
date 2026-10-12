@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "Obvolávání – interaktivní portfolio demo",
+  title: "Digital Call – interaktivní portfolio demo",
   description: "Syntetické demo pracovního modulu pro správu kontaktů a navazujících aktivit.",
 };
 
@@ -17,8 +18,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="cs" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
-      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
-        <div className="flex min-h-screen flex-col">{children}</div>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=localStorage.getItem('digital-call-theme');var d=s?s==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})();` }} />
+      </head>
+      <body className="min-h-screen antialiased">
+        <ThemeProvider><div className="flex min-h-screen flex-col">{children}</div></ThemeProvider>
       </body>
     </html>
   );

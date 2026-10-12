@@ -34,6 +34,12 @@ npm run build
 - Kanban jako přehled procesu se všemi šesti stavy.
 - Lokální pokračování scénáře po refreshi a bezpečný reset dema.
 
+## Vizuální systém
+
+Rozhraní používá vlastní světlé a tmavé sémantické tokeny pro podklad, obsahové a zvýšené plochy, ovládací sklo, okraje, text, akcent, focus a stavové významy. Motiv lze přepnout v hlavní liště; volba se ukládá lokálně a před hydratací se použije uložená nebo systémová preference.
+
+Webová interpretace Liquid Glass je záměrně omezená na navigaci, přepínač pohledů a hlavičky dialogů. Kontaktní řádky, Kanban, historie a formulářová těla zůstávají neprůhledné obsahové plochy. Pokud `backdrop-filter` nebo preference průhlednosti nejsou dostupné, ovládání používá neprůhledný kontrastní fallback. Nepodstatné přechody respektují `prefers-reduced-motion`.
+
 ## Stavový model
 
 Kontakt má tři oddělené oblasti:

@@ -82,7 +82,7 @@ export default function AccessibleModal({
 
   return (
     <div
-      className={`fixed inset-0 flex items-end justify-center bg-slate-950/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-5 ${layer === "nested" ? "z-[60]" : "z-50"} ${active ? "" : "pointer-events-none"}`}
+      className={`modal-overlay fixed inset-0 flex items-end justify-center p-0 sm:items-center sm:p-5 ${layer === "nested" ? "z-[60]" : "z-50"} ${active ? "" : "pointer-events-none"}`}
       aria-hidden={active ? undefined : true}
       inert={!active}
       onMouseDown={(event) => {
@@ -95,15 +95,15 @@ export default function AccessibleModal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
-        className={`max-h-[94dvh] w-full overflow-y-auto rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:rounded-3xl ${size === "lg" ? "sm:max-w-3xl" : "sm:max-w-lg"}`}
+        className={`modal-panel max-h-[94dvh] w-full overflow-y-auto rounded-t-[var(--dc-radius-xl)] border sm:rounded-[var(--dc-radius-xl)] ${size === "lg" ? "sm:max-w-3xl" : "sm:max-w-lg"}`}
       >
-        <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur sm:px-6">
+        <header className="modal-header sticky top-0 z-10 flex items-start justify-between gap-4 border-b px-5 py-4 sm:px-6">
           <div>
-            <h2 id={titleId} className="text-lg font-semibold tracking-tight text-slate-950">
+            <h2 id={titleId} className="text-main text-lg font-semibold tracking-[-0.015em]">
               {title}
             </h2>
             {description ? (
-              <p id={descriptionId} className="mt-1 text-sm text-slate-600">
+              <p id={descriptionId} className="text-muted mt-1 text-sm">
                 {description}
               </p>
             ) : null}
@@ -112,7 +112,7 @@ export default function AccessibleModal({
             ref={closeRef}
             type="button"
             onClick={onClose}
-            className="focus-ring -mr-1 grid size-10 shrink-0 place-items-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+            className="button-quiet -mr-1 size-11 shrink-0 px-0"
             aria-label="Zavřít dialog"
           >
             <X className="size-5" aria-hidden="true" />

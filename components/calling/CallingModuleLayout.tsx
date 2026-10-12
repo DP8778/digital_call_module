@@ -7,6 +7,7 @@ import ContactDetail from "./ContactDetail";
 import { ACTIVITY_LABEL } from "./labels";
 import OutcomeModal from "./OutcomeModal";
 import ProcessBoard from "./ProcessBoard";
+import ResetDemoModal from "./ResetDemoModal";
 import ScheduleModal from "./ScheduleModal";
 import StatusChangeModal from "./StatusChangeModal";
 import TodayView from "./TodayView";
@@ -23,6 +24,7 @@ export default function CallingModuleLayout() {
   const [outcomeOpen, setOutcomeOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [pendingMove, setPendingMove] = useState<ColumnId | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
   const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [announcement, setAnnouncement] = useState("");
@@ -105,7 +107,6 @@ export default function CallingModuleLayout() {
   }
 
   function resetDemo() {
-    if (!window.confirm("Obnovit výchozí demo? Všechny lokálně provedené změny budou nahrazeny.")) return;
     board.resetDemo();
     closeDetail();
     setAnnouncement("Demo bylo obnoveno do výchozího stavu.");
@@ -113,30 +114,30 @@ export default function CallingModuleLayout() {
 
   if (!board.state) {
     return (
-      <div className="mx-auto w-full max-w-6xl animate-pulse px-4 py-8 sm:px-6" aria-label="Načítání dema">
-        <div className="h-7 w-56 rounded-lg bg-slate-200" />
-        <div className="mt-3 h-4 w-96 max-w-full rounded bg-slate-100" />
-        <div className="mt-8 h-20 rounded-2xl bg-white shadow-sm" />
-        <div className="mt-6 space-y-3"><div className="h-28 rounded-2xl bg-white" /><div className="h-28 rounded-2xl bg-white" /></div>
+      <div className="mx-auto w-full max-w-7xl animate-pulse px-4 py-8 sm:px-6" aria-label="Načítání dema">
+        <div className="surface-subtle h-7 w-56 rounded-lg" />
+        <div className="surface-subtle mt-3 h-4 w-96 max-w-full rounded" />
+        <div className="content-surface mt-8 h-20" />
+        <div className="mt-6 space-y-3"><div className="content-surface h-28" /><div className="content-surface h-28" /></div>
       </div>
     );
   }
 
   return (
     <>
-      <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <div className="control-glass sticky top-[60px] z-30 border-b sm:top-16">
         <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
-          <nav aria-label="Hlavní zobrazení" className="flex rounded-xl bg-slate-100 p-1">
-            <button type="button" onClick={() => setView("today")} aria-current={view === "today" ? "page" : undefined} className={`focus-ring flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-semibold ${view === "today" ? "bg-white text-slate-950 shadow-sm" : "text-slate-600 hover:text-slate-950"}`}><ListTodo className="size-4" aria-hidden="true" />K řešení</button>
-            <button type="button" onClick={() => setView("process")} aria-current={view === "process" ? "page" : undefined} className={`focus-ring flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-semibold ${view === "process" ? "bg-white text-slate-950 shadow-sm" : "text-slate-600 hover:text-slate-950"}`}><KanbanSquare className="size-4" aria-hidden="true" />Proces</button>
+          <nav aria-label="Hlavní zobrazení" className="surface-subtle flex rounded-[14px] border p-1">
+            <button type="button" onClick={() => setView("today")} aria-current={view === "today" ? "page" : undefined} className={`focus-ring flex h-9 items-center gap-2 rounded-[10px] px-3 text-sm font-semibold transition-[background-color,color,box-shadow] duration-150 ${view === "today" ? "text-main bg-[var(--dc-surface-elevated)] shadow-sm" : "text-muted hover:text-main"}`}><ListTodo className="size-4" aria-hidden="true" />K řešení</button>
+            <button type="button" onClick={() => setView("process")} aria-current={view === "process" ? "page" : undefined} className={`focus-ring flex h-9 items-center gap-2 rounded-[10px] px-3 text-sm font-semibold transition-[background-color,color,box-shadow] duration-150 ${view === "process" ? "text-main bg-[var(--dc-surface-elevated)] shadow-sm" : "text-muted hover:text-main"}`}><KanbanSquare className="size-4" aria-hidden="true" />Proces</button>
           </nav>
-          <button type="button" onClick={resetDemo} className="focus-ring flex h-9 items-center gap-2 rounded-lg px-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-950"><RotateCcw className="size-4" aria-hidden="true" /><span className="hidden sm:inline">Obnovit demo</span></button>
+          <button type="button" onClick={() => setResetOpen(true)} className="button-quiet h-10 px-2.5 sm:px-3"><RotateCcw className="size-4" aria-hidden="true" /><span className="hidden sm:inline">Obnovit demo</span><span className="sr-only sm:hidden">Obnovit demo</span></button>
         </div>
       </div>
 
       {board.storageRecovered ? (
-        <div role="status" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4"><span>Uložená data nebyla kompatibilní nebo dostupná. Demo bylo bezpečně obnoveno.</span><button type="button" onClick={board.dismissStorageWarning} className="focus-ring shrink-0 rounded-lg px-2 py-1 font-semibold hover:bg-amber-100">Skrýt</button></div>
+        <div role="status" className="tone-warning border-b px-4 py-3 text-sm">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4"><span>Uložená data nebyla kompatibilní nebo dostupná. Demo bylo bezpečně obnoveno.</span><button type="button" onClick={board.dismissStorageWarning} className="button-quiet h-9 shrink-0 px-2">Skrýt</button></div>
         </div>
       ) : null}
 
@@ -166,6 +167,7 @@ export default function CallingModuleLayout() {
       {selectedContact && pendingMove ? (
         <StatusChangeModal contact={selectedContact} target={pendingMove} onClose={() => setPendingMove(null)} onConfirm={() => applyMove(pendingMove)} />
       ) : null}
+      {resetOpen ? <ResetDemoModal onClose={() => setResetOpen(false)} onConfirm={resetDemo} /> : null}
     </>
   );
 }
