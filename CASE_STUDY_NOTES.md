@@ -52,7 +52,7 @@ Zvolené řešení ponechává Kanban jako sekundární přehled a přidává pr
 - Koncové stavy neumožňují plánování. Změna stavu rušící termín vyžaduje potvrzení a vytváří historickou událost.
 - Po výsledku zůstává uživatel v detailu s potvrzením nového stavu a dalšího kroku a může se vědomě vrátit do fronty.
 - Návrat z detailu obnoví focus na kontakt jen tehdy, když je stále ve výběru; jinak použije nadpis aktuálního seznamu. Focus se neposílá na odmountovaný prvek.
-- Chyba čtení či zápisu úložiště neblokuje práci v paměti. UI rozlišuje obnovu neplatných uložených dat od situace, kdy aktuální změny nelze uchovat.
+- Chyba čtení či zápisu úložiště neblokuje práci v paměti. Po chybě čtení se automatická persistence nepovolí, takže syntetický fallback nemůže potichu přepsat neznámý původní stav; vědomý reset je jediná akce, která smí zápis znovu zkusit. UI rozlišuje obnovu neplatných dat, nedostupné čtení a selhání zápisu.
 - Kontakty jsou nevolatelné, syntetické a viditelně označené.
 - Všechny klíčové akce fungují klávesnicí bez drag-and-drop.
 
@@ -75,8 +75,9 @@ Výchozí dataset obsahuje aktivní dnešní hovory, zmeškaný hovor, dnešní 
 - Automatické testy čisté logiky: povolený i zakázaný přesun, vznik pokusu, plánování bez změny stavu, zákaz plánování v koncovém stavu, auditované zrušení aktivity, validace minulého termínu, přesné krátké doporučení, jednorázová expirace a obnova uloženého dema.
 - Automatické testy řazení fronty: dnešní prošlý termín, budoucí dnešní termín, hranice půlnoci a české tvary počtů.
 - Automatické testy pražského času včetně půlnoci a změn letního/zimního času.
-- Automatické testy navíc pokrývají celkovou naléhavost mimo aktivní filtr, validaci uloženého UI výběru a výjimky při čtení, zápisu a resetu úložiště.
-- Automatické testy: 26/26 prošlo v pěti testovacích souborech.
+- Automatické testy navíc pokrývají celkovou naléhavost mimo aktivní filtr, validaci uloženého UI výběru, čtyři výsledky čtení persistence a výjimky při čtení, zápisu a resetu úložiště.
+- Regresní test ověřuje, že chyba `getItem` nad předexistujícím validním stavem zakáže automatický zápis: následná práce v paměti nevolá funkční `setItem` a původní serializovaný stav zůstane beze změny. Samostatně je pokryto platné čtení se selháním `setItem` a vědomý reset po chybě čtení.
+- Automatické testy: 29/29 prošlo v pěti testovacích souborech.
 - TypeScript (`tsc --noEmit`), ESLint a produkční Next.js build prošly bez chyby.
 - Lokální vývojový server ve smoke testu vrátil HTTP 200 a správný titul stránky.
 - Vizuální redesign nezměnil čistou stavovou logiku, časová pravidla ani datové typy.
@@ -91,6 +92,7 @@ Výchozí dataset obsahuje aktivní dnešní hovory, zmeškaný hovor, dnešní 
 - Ruční průchod ve viewports 375, 768 a 1440 px, protože v implementačním prostředí nebylo dostupné ovládání prohlížeče.
 - Ruční ověření Tab, Shift+Tab a postupného Escape ve skutečném prohlížeči ani průchod asistivní technologií; implementace focus trapu a inertní spodní vrstvy nenahrazuje test se screen readerem.
 - Aktuální screenshoty redesignu nevznikly, protože prostředí nemělo nástroj pro řízený prohlížeč.
+- Přesný checklist pro osm desktop/mobile exportů je připravený v `artifacts/digital-call-portfolio/capture-checklist.md`; obrazová část zůstává nedokončená a checklist není vydáván za provedený capture.
 
 ## Obrazovky vhodné pro case study
 

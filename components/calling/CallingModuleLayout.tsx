@@ -156,7 +156,7 @@ export default function CallingModuleLayout() {
 
       {board.storageNotice ? (
         <div role="status" className="tone-warning border-b px-4 py-3 text-sm">
-          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4"><span>{board.storageNotice === "recovered" ? "Uložená data nebyla platná. Demo bylo bezpečně obnoveno z výchozího datasetu." : "Změny nyní nelze ukládat do prohlížeče. Můžete pokračovat, po zavření ale nemusí zůstat zachované."}</span><button type="button" onClick={board.dismissStorageNotice} className="button-quiet h-9 shrink-0 px-2">Skrýt</button></div>
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4"><span>{board.storageNotice === "recovered" ? "Uložená data nebyla platná. Demo bylo bezpečně obnoveno z výchozího datasetu." : board.storageNotice === "read-unavailable" ? "Uložená data se nepodařilo přečíst. Demo běží jen v paměti a změny se automaticky neukládají, aby se původní stav nepřepsal." : "Aktuální změny se nepodařilo uložit. Demo pokračuje v paměti, po zavření ale změny nemusí zůstat zachované."}</span><button type="button" onClick={board.dismissStorageNotice} className="button-quiet h-9 shrink-0 px-2">Skrýt</button></div>
         </div>
       ) : null}
 

@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { persistDemoState, readDemoState, resetDemoState, type StorageNotice } from "./callingStorage";
+import {
+  persistDemoState,
+  readDemoState,
+  resetDemoState,
+  type PersistenceState,
+  type StorageNotice,
+} from "./callingStorage";
 import {
   applyTimeRules,
   moveContact as moveContactInState,
@@ -20,6 +26,7 @@ function getLocalStorage(): Storage | null {
 
 export function useCallingBoardState() {
   const [state, setState] = useState<DemoState | null>(null);
+  const [persistence, setPersistence] = useState<PersistenceState>("initializing");
   const [storageNotice, setStorageNotice] = useState<StorageNotice>(null);
 
   useEffect(() => {
@@ -27,6 +34,7 @@ export function useCallingBoardState() {
     window.queueMicrotask(() => {
       if (cancelled) return;
       const restored = readDemoState(getLocalStorage(), Date.now());
+      setPersistence(restored.persistence);
       setStorageNotice(restored.notice);
       setState(restored.state);
     });
@@ -34,11 +42,15 @@ export function useCallingBoardState() {
   }, []);
 
   useEffect(() => {
-    if (!state) return;
-    if (!persistDemoState(getLocalStorage(), state)) {
-      window.queueMicrotask(() => setStorageNotice("unavailable"));
+    if (!state || persistence === "initializing") return;
+    const result = persistDemoState(getLocalStorage(), state, persistence);
+    if (result.status === "failed") {
+      window.queueMicrotask(() => {
+        setPersistence(result.persistence);
+        setStorageNotice("write-unavailable");
+      });
     }
-  }, [state]);
+  }, [persistence, state]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -67,6 +79,7 @@ export function useCallingBoardState() {
 
   const resetDemo = useCallback(() => {
     const reset = resetDemoState(getLocalStorage(), Date.now());
+    setPersistence(reset.persistence);
     setStorageNotice(reset.notice);
     setState(reset.state);
   }, []);

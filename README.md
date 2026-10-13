@@ -81,9 +81,15 @@ Všechny vstupy a výstupy termínů používají `Europe/Prague`. Převod odmí
 
 ## Uložení dema
 
-Stav kontaktů se ukládá do `localStorage` pod verzovaným klíčem `obvolavani-portfolio-demo-v2`. Při neplatném JSON, neznámé verzi nebo duplicitních ID se použije bezpečný výchozí dataset a UI zobrazí upozornění na obnovu. Pokud úložiště nelze číst nebo zapisovat, demo dál funguje v paměti a zvláštní upozornění vysvětluje, že změny po zavření nemusí zůstat zachované. Reset funguje i při blokovaném úložišti.
+Stav kontaktů se ukládá do `localStorage` pod verzovaným klíčem `obvolavani-portfolio-demo-v2`. Úspěšné čtení rozlišuje chybějící klíč, neplatný obsah a platný dataset. Při neplatném JSON, neznámé verzi nebo duplicitních ID se použije bezpečný výchozí dataset a UI zobrazí upozornění na obnovu.
+
+Pokud se úložiště vůbec nepodaří přečíst, demo dál funguje v paměti, ale automatické ukládání zůstane pro tuto relaci vypnuté, aby výchozí dataset nepřepsal neznámý původní stav. Vědomě potvrzený reset smí zápis zkusit a po úspěchu persistenci znovu povolí. Pokud selže zápis po úspěšném čtení, další akce dál fungují v paměti a UI pravdivě upozorní, že změny nemusí zůstat zachované.
 
 Pracovní UI výběr má samostatný verzovaný klíč `obvolavani-portfolio-ui-v1` v `sessionStorage`. Obsahuje jen pohled, hledaný text, zdroj a procesní stav; nemění schéma kontaktů a nikdy neobnovuje otevřený dialog ani rozpracovaný formulář. Neplatné enum hodnoty, JSON nebo blokované úložiště vedou k bezpečnému výchozímu pohledu.
+
+## Podklady pro screenshoty
+
+Řízený browser nebyl v posledním implementačním prostředí dostupný, proto repozitář neobsahuje vydávané PNG screenshoty. Reprodukovatelný scénář, přesné viewporty a osm cílových názvů jsou v [`artifacts/digital-call-portfolio/capture-checklist.md`](artifacts/digital-call-portfolio/capture-checklist.md). Build ani automatické testy nejsou vydávány za browserové ověření.
 
 ## Přístupnost
 
