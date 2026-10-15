@@ -59,10 +59,14 @@ Zvolené řešení ponechává Kanban jako sekundární přehled a přidává pr
 ## Vizuální iterace
 
 - Navigační a ovládací vrstva používá střídmý průsvitný materiál s krátkým blur efektem, světlou hranou a měkkým stínem. Obsahová vrstva zůstává neprůhledná, aby pracovní data nesoutěžila s efektem.
-- Světlý i tmavý motiv mají samostatné sémantické tokeny; tmavý režim není globální inverze. Přepínač je skutečně zapojený a preference se ukládá v prohlížeči.
+- Následná vizuální iterace zesílila materiál navigace a celého dialogového shellu pomocí tónovaného podkladu, 22–24px blur, vnitřního highlightu a odděleného blízkého a vzdáleného stínu. Hlavička nepřidává druhý backdrop blur a formulářová těla zůstávají neprůhledná.
+- Aktuální identita používá stejnou citronovou `#DFFF3F` v obou motivech: monogram DC, aktivní pohled, hlavní akci, vybraný ovládací prvek a malé orientační značky. Zbytek ploch je převážně neutrální grafitový nebo světlý. Aktivní filtry sdílejí druhou ovládací lištu, nevytvářejí třetí samostatnou lištu.
+- Vlastní textové třídy používají prefix `dc-`, takže sekundární text nekoliduje s Tailwind tokenem pro muted povrch. Staticky vypočtené minimum pro definované kombinace běžného, sekundárního a stavového textu je 5 : 1; pro silné hranice formulářů alespoň 3 : 1. Ruční vizuální kontrola obrazovek tím není nahrazena.
+- Detail kontaktu má kompaktnější status, přirozeně vysoké kontextové karty, zřetelnější hlavní akci a oddělenou plochu dalšího kroku. Kontextový formatter zobrazuje termín právě jednou a zachovává sekundy tam, kde jsou součástí pravidla.
+- Světlý i tmavý motiv mají samostatné sémantické tokeny; tmavý režim není globální inverze. Přepínač je skutečně zapojený, explicitní preference se aplikuje před hydratací a při selhání zápisu motiv dál funguje v paměti.
 - Fronta zachovává husté řádky, ale zvýrazňuje současnou prioritu, aktivní filtry a zmeškanou skupinu textem i hranou.
 - Kanban má na úzkém viewportu lokalizovaný horizontální scroll, takže šest sloupců neroztahuje celou stránku.
-- Dialogy mají glass pouze v hlavičce; formuláře, potvrzení, chyby a historie používají stabilní obsahové plochy.
+- Dialogy mají kouřový glass shell s jedinou rozostřenou vrstvou; formuláře, potvrzení, chyby a historie používají stabilní neprůhledné obsahové plochy.
 - Reset dema používá vlastní potvrzovací dialog se stejnou vizuální a přístupnostní strukturou místo nestylovatelného systémového potvrzení.
 - Fallbacky pokrývají chybějící blur, omezenou průhlednost, vyšší kontrast, forced colors a omezený pohyb.
 
@@ -77,11 +81,15 @@ Výchozí dataset obsahuje aktivní dnešní hovory, zmeškaný hovor, dnešní 
 - Automatické testy pražského času včetně půlnoci a změn letního/zimního času.
 - Automatické testy navíc pokrývají celkovou naléhavost mimo aktivní filtr, validaci uloženého UI výběru, čtyři výsledky čtení persistence a výjimky při čtení, zápisu a resetu úložiště.
 - Regresní test ověřuje, že chyba `getItem` nad předexistujícím validním stavem zakáže automatický zápis: následná práce v paměti nevolá funkční `setItem` a původní serializovaný stav zůstane beze změny. Samostatně je pokryto platné čtení se selháním `setItem` a vědomý reset po chybě čtení.
-- Automatické testy: 29/29 prošlo v pěti testovacích souborech.
+- Automatické testy pokrývají také kontextový termín bez duplikace a zachování sekund.
 - TypeScript (`tsc --noEmit`), ESLint a produkční Next.js build prošly bez chyby.
 - Lokální vývojový server ve smoke testu vrátil HTTP 200 a správný titul stránky.
 - Vizuální redesign nezměnil čistou stavovou logiku, časová pravidla ani datové typy.
-- Výpočet kontrastu hlavních, sekundárních a stavových textových tokenů vyšel v obou motivech nejméně 5,0 : 1; nejde však o náhradu kontroly každé výsledné komponenty v prohlížeči.
+- Po citronovo-grafitové vizuální iteraci prošlo znovu 30/30 testů, TypeScript, ESLint a produkční build. Statický výpočet definovaných textových kombinací vyšel nejméně 5,0 : 1 a silných hranic formulářů nejméně 3,0 : 1; nejde však o náhradu kontroly každé výsledné komponenty v prohlížeči.
+- Lokální Chrome 155: fronta v obou motivech a šířkách 375/1440 px, světlá fronta také v 768 px; detail, výsledkový formulář a potvrzení ve světlém desktopu a tmavém mobilu, detail/formulář navíc v opačných motivech a tmavém tabletu. Při těchto průchodech nebyl zjištěn horizontální přetečení stránky. Nejde o moderovaný uživatelský ani screen-reader test.
+- Browser průchod potvrdil zachování hledání/zdroje/stavu při cestě Proces → fronta a po refreshi, obnovu pohledu bez otevřeného dialogu, globální naléhavost při prázdném výběru, postupný Escape, inertní spodní dialog, smyčku Tab/Shift+Tab a návrat focusu na nadpis, když výsledek kontakt z filtru odstraní. Přepnutí motivu přetrvalo refresh. Při emulaci omezeného pohybu a průhlednosti byla vypnutá animace a blur.
+- Tabletní kontrola odhalila prosvítání obsahu přes sticky hlavičku dlouhého formuláře; neprůhledný hlavičkový token to odstranil a výsledná obrazovka byla znovu zkontrolována.
+- Čtyři srovnávací PNG fronty a detailu v obou motivech byly pořízeny z lokálního produkčního buildu do `artifacts/digital-call-visual-qa/`. Nejde o finální portfoliový capture.
 
 ## Co ještě ověřeno není
 
@@ -89,9 +97,8 @@ Výchozí dataset obsahuje aktivní dnešní hovory, zmeškaný hovor, dnešní 
 - Srozumitelnost zdrojových intervalů proti původnímu zadání.
 - Reálný výkon v provozu, týmová synchronizace a integrace.
 - Obchodní dopad, rychlost práce nebo snížení chybovosti.
-- Ruční průchod ve viewports 375, 768 a 1440 px, protože v implementačním prostředí nebylo dostupné ovládání prohlížeče.
-- Ruční ověření Tab, Shift+Tab a postupného Escape ve skutečném prohlížeči ani průchod asistivní technologií; implementace focus trapu a inertní spodní vrstvy nenahrazuje test se screen readerem.
-- Aktuální screenshoty redesignu nevznikly, protože prostředí nemělo nástroj pro řízený prohlížeč.
+- Úplná kombinatorická kontrola všech stavů v každém motivu a viewportu a průchod asistivní technologií; test focusu v Chrome nenahrazuje screen reader.
+- Osm plánovaných finálních screenshotů pro case study nevzniklo; čtyři kontrolní snímky produkčního buildu nenahrazují kompletní scénář.
 - Přesný checklist pro osm desktop/mobile exportů je připravený v `artifacts/digital-call-portfolio/capture-checklist.md`; obrazová část zůstává nedokončená a checklist není vydáván za provedený capture.
 
 ## Obrazovky vhodné pro case study

@@ -37,9 +37,9 @@ npm run build
 
 ## Vizuální systém
 
-Rozhraní používá vlastní světlé a tmavé sémantické tokeny pro podklad, obsahové a zvýšené plochy, ovládací sklo, okraje, text, akcent, focus a stavové významy. Motiv lze přepnout v hlavní liště; volba se ukládá lokálně a před hydratací se použije uložená nebo systémová preference.
+Rozhraní má v obou motivech jedinou značkovou barvu `#DFFF3F` s tmavým textem `#11130A`. Tmavý podklad je grafitový `#0B0D0C`, světlý teplý `#F3F4EF`; obsahové plochy, text, hranice a stavové barvy mají vlastní tokeny pro každý motiv. Žlutá patří značce, aktivní navigaci, hlavní akci a výběru. Naléhavost, chyba a úspěch mají oddělené sémantické významy; běžné procesní štítky jsou neutrální. Motiv lze přepnout v hlavní liště; volba se ukládá lokálně a před hydratací se použije uložená nebo systémová preference. Přepnutí funguje i při blokovaném zápisu do úložiště, jen se pak volba nemusí zachovat po refreshi.
 
-Webová interpretace Liquid Glass je záměrně omezená na navigaci, přepínač pohledů a hlavičky dialogů. Kontaktní řádky, Kanban, historie a formulářová těla zůstávají neprůhledné obsahové plochy. Pokud `backdrop-filter` nebo preference průhlednosti nejsou dostupné, ovládání používá neprůhledný kontrastní fallback. Nepodstatné přechody respektují `prefers-reduced-motion`.
+Webová interpretace Liquid Glass je podpůrná a omezená na navigaci, přepínač pohledů a shell dialogů. Kontaktní řádky, Kanban, historie a formulářová těla zůstávají stabilními obsahovými plochami. Vlastní textové helpery mají prefix `dc-`, aby nekolidovaly s Tailwind barvami povrchů. Statický výpočet pro definované kombinace textu a podkladu dává běžnému i sémantickému textu nejméně 5 : 1, primární akci 16,5 : 1 a silným hranicím formulářů nejméně 3 : 1; nejde o ruční kontrolu výsledných obrazovek v prohlížeči. Bez `backdrop-filter` nebo při omezené průhlednosti používá ovládání neprůhledný fallback. Nepodstatné přechody respektují `prefers-reduced-motion`.
 
 ## Stavový model
 
@@ -89,7 +89,7 @@ Pracovní UI výběr má samostatný verzovaný klíč `obvolavani-portfolio-ui-
 
 ## Podklady pro screenshoty
 
-Řízený browser nebyl v posledním implementačním prostředí dostupný, proto repozitář neobsahuje vydávané PNG screenshoty. Reprodukovatelný scénář, přesné viewporty a osm cílových názvů jsou v [`artifacts/digital-call-portfolio/capture-checklist.md`](artifacts/digital-call-portfolio/capture-checklist.md). Build ani automatické testy nejsou vydávány za browserové ověření.
+Lokální Chrome posloužil k vizuální kontrole této iterace. Čtyři srovnatelné kontrolní snímky fronty a detailu v obou motivech z produkčního buildu jsou v [`artifacts/digital-call-visual-qa/`](artifacts/digital-call-visual-qa/README.md). Nejsou to portfoliové exporty; ty zůstávají nedokončené a jejich scénář je v [`capture-checklist.md`](artifacts/digital-call-portfolio/capture-checklist.md).
 
 ## Přístupnost
 

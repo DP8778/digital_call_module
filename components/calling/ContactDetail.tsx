@@ -7,7 +7,7 @@ import { ACTIVITY_LABEL, SOURCE_LABEL, TYPE_LABEL } from "./labels";
 import { formatAttemptCount, getAttentionReason, getQueueGroup } from "./queueLogic";
 import { getAttemptCount } from "./stateLogic";
 import StatusPill from "./StatusPill";
-import { formatPragueDateTime, formatPragueDateTimePrecise, relativeDayLabel } from "./time";
+import { formatContextualPragueDateTime, formatPragueDateTime } from "./time";
 import type { ActionFeedback, ColumnId, Contact } from "./types";
 
 export default function ContactDetail({
@@ -64,7 +64,7 @@ export default function ContactDetail({
 
   return (
     <AccessibleModal title={contact.name} description={`${contact.subtype} · ${contact.city}`} onClose={onClose} size="lg" active={active}>
-      <div className="p-5 sm:p-6">
+      <div className="p-4 sm:p-5">
         {feedback ? (
           <section role="status" className="tone-success mb-5 rounded-2xl border p-4">
             <div className="flex gap-3"><CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden="true" /><div className="min-w-0 flex-1"><h3 className="font-semibold">{feedback.title}</h3><p className="mt-1 text-sm">{feedback.description}</p>{feedback.nextStep ? <p className="mt-1 text-sm font-semibold">Další krok: {feedback.nextStep}</p> : null}</div></div>
@@ -72,65 +72,65 @@ export default function ContactDetail({
           </section>
         ) : null}
 
-        <section aria-labelledby="attention-heading" className={`rounded-2xl border p-4 ${queueGroup === "missed" ? "tone-danger" : isTerminal ? "tone-neutral" : "tone-accent"}`}>
+        <section aria-labelledby="attention-heading" className={`rounded-2xl border px-4 py-3.5 ${queueGroup === "missed" ? "tone-danger" : "tone-neutral"}`}>
           <div className="flex flex-wrap items-center gap-2"><StatusPill status={contact.status} /><span className="text-xs font-semibold uppercase tracking-[0.08em] opacity-80">Proč teď?</span></div>
-          <h3 id="attention-heading" className="mt-3 text-lg font-semibold">{getAttentionReason(contact, now)}</h3>
+          <h3 id="attention-heading" className="mt-2 text-base font-semibold sm:text-lg">{getAttentionReason(contact, now)}</h3>
         </section>
 
-        <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(240px,.75fr)]">
-          <div className="space-y-6">
+        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(250px,.65fr)]">
+          <div className="space-y-5">
             <section aria-labelledby="context-heading">
-              <h3 id="context-heading" className="text-main text-sm font-semibold">Kontext před akcí</h3>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <div className="surface-subtle rounded-2xl border p-4"><div className="text-muted text-xs font-semibold uppercase tracking-wide">Nemovitost</div><div className="text-main mt-2 font-semibold">{contact.subtype}</div><div className="text-muted mt-1 text-sm">{TYPE_LABEL[contact.type]} · {contact.city} · {SOURCE_LABEL[contact.source]}</div></div>
-                <div className="surface-subtle rounded-2xl border p-4"><div className="text-muted text-xs font-semibold uppercase tracking-wide">Poslední interakce</div><div className="text-main mt-2 font-semibold">{lastInteraction?.label ?? "Zatím bez interakce"}</div>{lastInteraction ? <div className="text-muted mt-1 text-sm">{formatPragueDateTime(lastInteraction.at)}</div> : null}{lastInteraction?.note ? <p className="text-main mt-2 text-sm leading-relaxed">{lastInteraction.note}</p> : null}</div>
+              <h3 id="context-heading" className="dc-text-primary text-sm font-semibold">Kontext před akcí</h3>
+              <div className="mt-2.5 grid gap-3 sm:grid-cols-2">
+                <div className="detail-card rounded-2xl border p-3.5"><div className="dc-text-muted text-xs font-semibold uppercase tracking-wide">Nemovitost</div><div className="dc-text-primary mt-1.5 font-semibold">{contact.subtype}</div><div className="dc-text-muted mt-1 text-sm">{TYPE_LABEL[contact.type]} · {contact.city} · {SOURCE_LABEL[contact.source]}</div></div>
+                <div className="detail-card rounded-2xl border p-3.5"><div className="dc-text-muted text-xs font-semibold uppercase tracking-wide">Poslední interakce</div><div className="dc-text-primary mt-1.5 font-semibold">{lastInteraction?.label ?? "Zatím bez interakce"}</div>{lastInteraction ? <div className="dc-text-muted mt-1 text-sm">{formatPragueDateTime(lastInteraction.at)}</div> : null}{lastInteraction?.note ? <p className="dc-text-primary mt-2 text-sm leading-relaxed">{lastInteraction.note}</p> : null}</div>
               </div>
             </section>
 
-            {primaryAction && PrimaryIcon ? (
+            {primaryAction && PrimaryIcon && !feedback ? (
               <section aria-labelledby="primary-action-heading">
-                <h3 id="primary-action-heading" className="text-main text-sm font-semibold">Hlavní akce</h3>
-                <button type="button" onClick={primaryAction.action} className="button-primary mt-3 h-auto w-full justify-center py-3 sm:w-auto sm:justify-start"><PrimaryIcon className="size-4" aria-hidden="true" />{primaryAction.label}</button>
+                <h3 id="primary-action-heading" className="dc-text-primary text-sm font-semibold">Hlavní akce</h3>
+                <button type="button" onClick={primaryAction.action} className="button-primary mt-2.5 h-auto w-full justify-center px-5 py-3 sm:w-auto sm:justify-start"><PrimaryIcon className="size-4" aria-hidden="true" />{primaryAction.label}</button>
               </section>
             ) : null}
 
             <section aria-labelledby="next-step-heading">
-              <div className="flex items-center justify-between gap-3"><h3 id="next-step-heading" className="text-main text-sm font-semibold">Příští krok</h3>{!isTerminal ? <button type="button" onClick={onSchedule} className="button-quiet h-9 px-2 text-[var(--dc-accent)]">{contact.nextActivity ? "Upravit termín" : "Naplánovat aktivitu"}</button> : null}</div>
+              <div className="flex items-center justify-between gap-3"><h3 id="next-step-heading" className="dc-text-primary text-sm font-semibold">Příští krok</h3>{!isTerminal ? <button type="button" onClick={onSchedule} className="button-quiet dc-text-accent h-9 px-2">{contact.nextActivity ? "Upravit termín" : "Naplánovat aktivitu"}</button> : null}</div>
               {isTerminal ? (
                 <div className="tone-neutral mt-3 rounded-2xl border p-4 text-sm">Proces je uzavřený. V tomto stavu nelze plánovat novou aktivitu.</div>
               ) : contact.nextActivity ? (
-                <div className={`mt-3 flex gap-3 rounded-2xl border p-4 ${activityOverdue ? "tone-danger" : "tone-accent"}`}><CalendarClock className="mt-0.5 size-5 shrink-0" aria-hidden="true" /><div><div className="font-semibold">{activityOverdue ? "Po termínu · " : ""}{ACTIVITY_LABEL[contact.nextActivity.type]}</div><div className="mt-1 text-sm">{relativeDayLabel(contact.nextActivity.dueAt, now)} · {formatPragueDateTimePrecise(contact.nextActivity.dueAt)}</div></div></div>
+                <div className={`next-step-card mt-2.5 flex gap-3 rounded-2xl border p-3.5 ${activityOverdue ? "tone-danger" : "tone-neutral"}`}><CalendarClock className="mt-0.5 size-5 shrink-0" aria-hidden="true" /><div><div className="font-semibold">{activityOverdue ? "Po termínu · " : ""}{ACTIVITY_LABEL[contact.nextActivity.type]}</div><div className="mt-1 text-sm">{formatContextualPragueDateTime(contact.nextActivity.dueAt, now)}</div></div></div>
               ) : (
                 <div className="tone-warning mt-3 rounded-2xl border border-dashed p-4 text-sm">Kontakt nemá naplánovanou příští aktivitu.</div>
               )}
             </section>
 
-            <details className="surface-subtle rounded-2xl border">
-              <summary className="focus-ring text-main cursor-pointer rounded-2xl px-4 py-3 text-sm font-semibold">Úplné kontaktní údaje</summary>
+            <details className="detail-card rounded-2xl border">
+              <summary className="focus-ring dc-text-primary cursor-pointer rounded-2xl px-4 py-3 text-sm font-semibold">Úplné kontaktní údaje</summary>
               <dl className="grid gap-4 border-t p-4 sm:grid-cols-2" style={{ borderColor: "var(--dc-border)" }}>
-                <div><dt className="text-muted flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide"><Phone className="size-3.5" aria-hidden="true" />Telefon</dt><dd className="text-main mt-1 font-medium">{contact.phone}</dd><dd className="text-faint mt-0.5 text-xs">Syntetický, nelze vytáčet</dd></div>
-                <div><dt className="text-muted flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide"><Mail className="size-3.5" aria-hidden="true" />E-mail</dt><dd className="text-main mt-1 break-all font-medium">{contact.email}</dd></div>
-                <div><dt className="text-muted flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide"><MapPin className="size-3.5" aria-hidden="true" />Lokalita</dt><dd className="text-main mt-1 font-medium">{contact.city}</dd></div>
-                <div><dt className="text-muted text-xs font-medium uppercase tracking-wide">Evidence</dt><dd className="text-main mt-1 font-medium">{formatAttemptCount(attempts)} · od {formatPragueDateTime(contact.createdAt)}</dd></div>
+                <div><dt className="dc-text-muted flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide"><Phone className="size-3.5" aria-hidden="true" />Telefon</dt><dd className="dc-text-primary mt-1 font-medium">{contact.phone}</dd><dd className="dc-text-faint mt-0.5 text-xs">Syntetický, nelze vytáčet</dd></div>
+                <div><dt className="dc-text-muted flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide"><Mail className="size-3.5" aria-hidden="true" />E-mail</dt><dd className="dc-text-primary mt-1 break-all font-medium">{contact.email}</dd></div>
+                <div><dt className="dc-text-muted flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide"><MapPin className="size-3.5" aria-hidden="true" />Lokalita</dt><dd className="dc-text-primary mt-1 font-medium">{contact.city}</dd></div>
+                <div><dt className="dc-text-muted text-xs font-medium uppercase tracking-wide">Evidence</dt><dd className="dc-text-primary mt-1 font-medium">{formatAttemptCount(attempts)} · od {formatPragueDateTime(contact.createdAt)}</dd></div>
               </dl>
             </details>
 
             <section aria-labelledby="history-heading">
-              <h3 id="history-heading" className="text-main text-sm font-semibold">Historie</h3>
+              <h3 id="history-heading" className="dc-text-primary text-sm font-semibold">Historie</h3>
               <ol className="mt-3">
                 {history.map((entry, index) => (
-                  <li key={entry.id} className="relative grid grid-cols-[20px_1fr] gap-3 pb-4 last:pb-0">{index < history.length - 1 ? <span className="absolute left-[9px] top-5 h-[calc(100%-10px)] w-px bg-[var(--dc-border-strong)]" aria-hidden="true" /> : null}<span className="relative mt-1 grid size-5 place-items-center rounded-full border bg-[var(--dc-surface-elevated)]" style={{ borderColor: "var(--dc-border-strong)" }}><span className="size-1.5 rounded-full bg-[var(--dc-accent)]" /></span><div><div className="text-main text-sm font-medium">{entry.label}</div><div className="text-muted mt-0.5 flex items-center gap-1 text-xs"><Clock3 className="size-3" aria-hidden="true" />{formatPragueDateTime(entry.at)}</div>{entry.note ? <p className="surface-subtle text-main mt-2 rounded-xl px-3 py-2 text-sm leading-relaxed">{entry.note}</p> : null}</div></li>
+                  <li key={entry.id} className="relative grid grid-cols-[20px_1fr] gap-3 pb-4 last:pb-0">{index < history.length - 1 ? <span className="absolute left-[9px] top-5 h-[calc(100%-10px)] w-px bg-[var(--dc-border-strong)]" aria-hidden="true" /> : null}<span className="relative mt-1 grid size-5 place-items-center rounded-full border bg-[var(--dc-surface-elevated)]" style={{ borderColor: "var(--dc-border-strong)" }}><span className="size-1.5 rounded-full bg-[var(--dc-accent)]" /></span><div><div className="dc-text-primary text-sm font-medium">{entry.label}</div><div className="dc-text-muted mt-0.5 flex items-center gap-1 text-xs"><Clock3 className="size-3" aria-hidden="true" />{formatPragueDateTime(entry.at)}</div>{entry.note ? <p className="surface-subtle dc-text-primary mt-2 rounded-xl px-3 py-2 text-sm leading-relaxed">{entry.note}</p> : null}</div></li>
                 ))}
               </ol>
             </section>
           </div>
 
-          <aside className="surface-subtle space-y-5 rounded-2xl border p-4 lg:self-start">
+          <aside className="process-actions space-y-4 rounded-2xl border p-4 lg:self-start">
             <section aria-labelledby="status-actions-heading">
-              <h3 id="status-actions-heading" className="text-main text-sm font-semibold">Povolená změna stavu</h3>
-              {moves.length > 0 ? <div className="mt-3 grid gap-2">{moves.map((target) => <button key={target} type="button" onClick={() => onMove(target)} className="button-secondary h-auto justify-start px-3 py-2.5 text-left">Přesunout do „{COLUMN_LABEL_CS[target]}“</button>)}</div> : <p className="text-muted mt-2 text-sm leading-relaxed">{isTerminal ? "Tento stav je koncový. Kontakt zůstává dohledatelný v Kanbanu." : "Hlavní povolený krok je dostupný výše v detailu."}</p>}
+              <h3 id="status-actions-heading" className="dc-text-primary text-sm font-semibold">Povolená změna stavu</h3>
+              {moves.length > 0 ? <div className="mt-3 grid gap-2">{moves.map((target) => <button key={target} type="button" onClick={() => onMove(target)} className="button-secondary h-auto justify-start px-3 py-2.5 text-left">Přesunout do „{COLUMN_LABEL_CS[target]}“</button>)}</div> : <p className="dc-text-muted mt-2 text-sm leading-relaxed">{isTerminal ? "Tento stav je koncový. Kontakt zůstává dohledatelný v Kanbanu." : "Hlavní povolený krok je dostupný výše v detailu."}</p>}
             </section>
-            <div className="text-muted border-t pt-4 text-xs leading-relaxed" style={{ borderColor: "var(--dc-border)" }}>Demo neuskutečňuje hovory ani neposílá e-maily. Všechna data jsou syntetická a uložená pouze v tomto prohlížeči.</div>
+            <div className="dc-text-muted border-t pt-4 text-xs leading-relaxed" style={{ borderColor: "var(--dc-border)" }}>Demo neuskutečňuje hovory ani neposílá e-maily. Všechna data jsou syntetická a uložená pouze v tomto prohlížeči.</div>
           </aside>
         </div>
       </div>

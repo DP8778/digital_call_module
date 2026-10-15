@@ -19,7 +19,7 @@ export default function RootLayout({
   return (
     <html lang="cs" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=localStorage.getItem('digital-call-theme');var d=s?s==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})();` }} />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var d=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;try{var s=localStorage.getItem('digital-call-theme');if(s==='dark'||s==='light')d=s==='dark'}catch(e){}document.documentElement.classList.toggle('dark',!!d);document.documentElement.style.colorScheme=d?'dark':'light'})();` }} />
       </head>
       <body className="min-h-screen antialiased">
         <ThemeProvider><div className="flex min-h-screen flex-col">{children}</div></ThemeProvider>

@@ -19,6 +19,13 @@ const dateTimeWithSecondsFormatter = new Intl.DateTimeFormat("cs-CZ", {
   second: "2-digit",
 });
 
+const displayDateFormatter = new Intl.DateTimeFormat("cs-CZ", {
+  timeZone: PRAGUE_TIME_ZONE,
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+
 const dayFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: PRAGUE_TIME_ZONE,
   year: "numeric",
@@ -98,6 +105,17 @@ export function formatPragueTimeWithSeconds(timestamp: number): string {
     minute: "2-digit",
     second: "2-digit",
   }).format(timestamp);
+}
+
+export function formatContextualPragueDateTime(timestamp: number, now: number): string {
+  const key = pragueDayKey(timestamp);
+  const time = timestamp % 60_000 === 0
+    ? formatPragueTime(timestamp)
+    : formatPragueTimeWithSeconds(timestamp);
+  if (key === pragueDayKey(now)) return `Dnes · ${time}`;
+  if (key === pragueDayKey(addPragueCalendarDays(now, 1))) return `Zítra · ${time}`;
+  if (key === pragueDayKey(addPragueCalendarDays(now, -1))) return `Včera · ${time}`;
+  return `${displayDateFormatter.format(timestamp)} · ${time}`;
 }
 
 export function ceilToMinute(timestamp: number): number {

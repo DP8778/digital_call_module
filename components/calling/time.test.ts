@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   addPragueCalendarDays,
+  formatContextualPragueDateTime,
   formatPragueDateTime,
   formatPragueDateTimePrecise,
   parsePragueDateTime,
@@ -19,6 +20,15 @@ describe("časové výpočty Europe/Prague", () => {
   it("zobrazí sekundy u přesného krátkého termínu", () => {
     const timestamp = parsePragueDateTime("2026-10-12T14:30")! + 30_000;
     expect(formatPragueDateTimePrecise(timestamp)).toContain("14:30:30");
+  });
+
+  it("zobrazí starší termín jednou a u přesného dne zachová sekundy", () => {
+    const now = parsePragueDateTime("2026-10-13T12:00")!;
+    const older = parsePragueDateTime("2026-10-11T09:00")!;
+    const preciseToday = parsePragueDateTime("2026-10-13T14:30")! + 30_000;
+
+    expect(formatContextualPragueDateTime(older, now)).toBe("11. 10. 2026 · 09:00");
+    expect(formatContextualPragueDateTime(preciseToday, now)).toBe("Dnes · 14:30:30");
   });
 
   it("odmítne neexistující čas při jarním přechodu", () => {

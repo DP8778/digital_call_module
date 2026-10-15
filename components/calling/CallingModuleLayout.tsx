@@ -146,12 +146,21 @@ export default function CallingModuleLayout() {
     <>
       <div className="control-glass sticky top-[60px] z-30 border-b sm:top-16">
         <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
-          <nav aria-label="Hlavní zobrazení" className="surface-subtle flex rounded-[14px] border p-1">
-            <button type="button" onClick={() => ui.setView("today")} aria-current={view === "today" ? "page" : undefined} className={`focus-ring flex h-9 items-center gap-2 rounded-[10px] px-3 text-sm font-semibold transition-[background-color,color,box-shadow] duration-150 ${view === "today" ? "text-main bg-[var(--dc-surface-elevated)] shadow-sm" : "text-muted hover:text-main"}`}><ListTodo className="size-4" aria-hidden="true" />K řešení</button>
-            <button type="button" onClick={() => ui.setView("process")} aria-current={view === "process" ? "page" : undefined} className={`focus-ring flex h-9 items-center gap-2 rounded-[10px] px-3 text-sm font-semibold transition-[background-color,color,box-shadow] duration-150 ${view === "process" ? "text-main bg-[var(--dc-surface-elevated)] shadow-sm" : "text-muted hover:text-main"}`}><KanbanSquare className="size-4" aria-hidden="true" />Proces</button>
+          <nav aria-label="Hlavní zobrazení" className="segmented-control flex rounded-[14px] border p-1">
+            <button type="button" onClick={() => ui.setView("today")} aria-current={view === "today" ? "page" : undefined} data-active={view === "today"} className="segment-button focus-ring flex h-9 items-center gap-2 rounded-[10px] px-3 text-sm font-semibold"><ListTodo className="size-4" aria-hidden="true" />K řešení</button>
+            <button type="button" onClick={() => ui.setView("process")} aria-current={view === "process" ? "page" : undefined} data-active={view === "process"} className="segment-button focus-ring flex h-9 items-center gap-2 rounded-[10px] px-3 text-sm font-semibold"><KanbanSquare className="size-4" aria-hidden="true" />Proces</button>
           </nav>
           <button type="button" onClick={() => setResetOpen(true)} className="button-quiet h-10 px-2.5 sm:px-3"><RotateCcw className="size-4" aria-hidden="true" /><span className="hidden sm:inline">Obnovit demo</span><span className="sr-only sm:hidden">Obnovit demo</span></button>
         </div>
+        {filtersActive ? (
+          <div className="mx-auto flex w-full max-w-[1500px] flex-wrap items-center gap-2 border-t border-[var(--dc-border)] px-4 py-2 sm:px-6" aria-label="Aktivní filtry fronty">
+            <span className="dc-text-muted text-xs font-semibold uppercase tracking-wide">Výběr fronty</span>
+            {filters.query.trim() ? <button type="button" onClick={() => ui.setFilters({ ...filters, query: "" })} className="active-filter focus-ring inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium"><span className="max-w-[min(50vw,18rem)] truncate">„{filters.query.trim()}“</span><X className="size-3 shrink-0" aria-hidden="true" /></button> : null}
+            {filters.source !== "all" ? <button type="button" onClick={() => ui.setFilters({ ...filters, source: "all" })} className="active-filter focus-ring inline-flex min-h-8 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium">{SOURCE_LABEL[filters.source]} <X className="size-3" aria-hidden="true" /></button> : null}
+            {filters.status !== "all" ? <button type="button" onClick={() => ui.setFilters({ ...filters, status: "all" })} className="active-filter focus-ring inline-flex min-h-8 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium">{COLUMN_LABEL_CS[filters.status]} <X className="size-3" aria-hidden="true" /></button> : null}
+            <button type="button" onClick={() => ui.setFilters({ query: "", source: "all", status: "all" })} className="button-quiet h-8 px-2 text-xs">Zrušit vše</button>
+          </div>
+        ) : null}
       </div>
 
       {board.storageNotice ? (
@@ -160,20 +169,8 @@ export default function CallingModuleLayout() {
         </div>
       ) : null}
 
-      {filtersActive ? (
-        <div className="border-b bg-[var(--dc-surface)] px-4 py-2.5 sm:px-6" style={{ borderColor: "var(--dc-border)" }}>
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2" aria-label="Aktivní filtry fronty">
-            <span className="text-muted text-xs font-semibold uppercase tracking-wide">Výběr fronty</span>
-            {filters.query.trim() ? <button type="button" onClick={() => ui.setFilters({ ...filters, query: "" })} className="tone-accent focus-ring inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium">„{filters.query.trim()}“ <X className="size-3" aria-hidden="true" /></button> : null}
-            {filters.source !== "all" ? <button type="button" onClick={() => ui.setFilters({ ...filters, source: "all" })} className="tone-accent focus-ring inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium">{SOURCE_LABEL[filters.source]} <X className="size-3" aria-hidden="true" /></button> : null}
-            {filters.status !== "all" ? <button type="button" onClick={() => ui.setFilters({ ...filters, status: "all" })} className="tone-accent focus-ring inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium">{COLUMN_LABEL_CS[filters.status]} <X className="size-3" aria-hidden="true" /></button> : null}
-            <button type="button" onClick={() => ui.setFilters({ query: "", source: "all", status: "all" })} className="button-quiet h-8 px-2 text-xs">Zrušit vše</button>
-          </div>
-        </div>
-      ) : null}
-
       <div aria-live="polite" className="sr-only">{announcement}</div>
-      {view === "today" ? <TodayView contacts={board.state.contacts} now={now} filters={filters} onFiltersChange={ui.setFilters} onOpenContact={openContact} /> : <ProcessBoard contacts={board.state.contacts} now={now} onOpenContact={openContact} />}
+      {view === "today" ? <TodayView contacts={board.state.contacts} now={now} filters={filters} selectedId={selectedId} onFiltersChange={ui.setFilters} onOpenContact={openContact} /> : <ProcessBoard contacts={board.state.contacts} now={now} selectedId={selectedId} onOpenContact={openContact} />}
 
       {selectedContact ? (
         <ContactDetail

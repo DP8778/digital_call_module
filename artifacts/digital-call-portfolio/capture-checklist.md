@@ -6,7 +6,7 @@ Obrazová část je **nedokončená**. V implementačním prostředí nebyl 13. 
 
 ## Zdroj a fixture
 
-- Výchozí source commit: `f9aef474256864615c6b650623b56e95ce4725dc` plus lokální persistence oprava čekající na review.
+- Výchozí source commit: `ed0c3e4d7f52f0c76e2c4358c911a93e54521a4c` plus lokální vizuální iterace čekající na review.
 - Datum checklistu: 13. 10. 2026.
 - Motiv: light.
 - Desktop viewport: `1440 × 1000`.

@@ -3,9 +3,9 @@ import type { ColumnId } from "./types";
 
 const STYLE: Record<ColumnId, string> = {
   backlog: "tone-neutral",
-  to_call: "tone-accent",
-  call_later: "tone-warning",
-  meeting: "tone-info",
+  to_call: "tone-neutral",
+  call_later: "tone-neutral",
+  meeting: "tone-neutral",
   listed: "tone-success",
   disqualified: "tone-danger",
 };

@@ -100,15 +100,15 @@ export default function AccessibleModal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
-        className={`modal-panel max-h-[94dvh] w-full overflow-y-auto rounded-t-[var(--dc-radius-xl)] border sm:rounded-[var(--dc-radius-xl)] ${size === "lg" ? "sm:max-w-3xl" : "sm:max-w-lg"}`}
+        className={`modal-panel max-h-[96dvh] w-full overflow-y-auto rounded-t-[var(--dc-radius-xl)] border sm:max-h-[94dvh] sm:rounded-[var(--dc-radius-xl)] ${size === "lg" ? "sm:max-w-4xl" : "sm:max-w-lg"}`}
       >
         <header className="modal-header sticky top-0 z-10 flex items-start justify-between gap-4 border-b px-5 py-4 sm:px-6">
           <div>
-            <h2 id={titleId} className="text-main text-lg font-semibold tracking-[-0.015em]">
+            <h2 id={titleId} className="dc-text-primary text-lg font-bold tracking-[-0.025em]">
               {title}
             </h2>
             {description ? (
-              <p id={descriptionId} className="text-muted mt-1 text-sm">
+              <p id={descriptionId} className="dc-text-muted mt-1 text-sm">
                 {description}
               </p>
             ) : null}
@@ -123,7 +123,7 @@ export default function AccessibleModal({
             <X className="size-5" aria-hidden="true" />
           </button>
         </header>
-        {children}
+        <div className="modal-content">{children}</div>
       </div>
     </div>
   );
