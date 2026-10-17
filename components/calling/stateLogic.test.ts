@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createDemoState } from "./mockContacts";
 import {
+  applyBoardOperation,
   applyTimeRules,
   CALL_READY_GRACE_MS,
   getAttemptCount,
@@ -85,6 +86,56 @@ describe("stavová logika dema", () => {
     }, NOW);
 
     expect(next).toBe(initial);
+  });
+
+  it("potvrdí platný termín podle skutečně přijatého stavu bez změny procesu", () => {
+    const initial = createDemoState(NOW);
+    const dueAt = NOW + 2 * 60 * 60_000;
+    const result = applyBoardOperation(initial, { kind: "schedule", contactId: "demo-7", input: { activityType: "meeting", dueAt } }, NOW);
+
+    expect(result.accepted).toBe(true);
+    if (!result.accepted) return;
+    expect(result.contact.status).toBe("backlog");
+    expect(result.contact.nextActivity).toMatchObject({ type: "meeting", dueAt });
+    expect(result.contact.history[0]).toMatchObject({ type: "activity_scheduled", at: NOW });
+    expect(getAttemptCount(result.contact)).toBe(getAttemptCount(contact(initial, "demo-7")));
+  });
+
+  it("odmítne termín, který uplynul mezi otevřením a potvrzením, bez falešného úspěchu", () => {
+    const initial = createDemoState(NOW);
+    const dueAt = NOW + 1_000;
+    const result = applyBoardOperation(initial, { kind: "schedule", contactId: "demo-7", input: { activityType: "call", dueAt } }, NOW + 1_001);
+
+    expect(result).toMatchObject({ accepted: false, reason: "expired", state: initial });
+    expect(contact(initial, "demo-7").nextActivity).toBeNull();
+  });
+
+  it("vypršené krátké doporučení nepřidá pokus ani nepotvrdí výsledek", () => {
+    const demo = createDemoState(NOW);
+    const initial = { ...demo, contacts: demo.contacts.map((item) => item.id === "demo-11" ? { ...item, status: "to_call" as const } : item) };
+    const original = contact(initial, "demo-11");
+    const recommendedAt = getRecommendedFollowUpAt(original, NOW);
+    const result = applyBoardOperation(initial, { kind: "outcome", contactId: original.id, input: { outcome: "no_answer", note: "Rozepsaná poznámka", scheduledAt: recommendedAt } }, recommendedAt);
+
+    expect(recommendedAt).toBe(NOW + 30_000);
+    expect(result).toMatchObject({ accepted: false, reason: "expired", state: initial });
+    expect(contact(initial, original.id).history).toBe(original.history);
+  });
+
+  it("po přijatém výsledku zapíše jediný pokus a opakované potvrzení odmítne", () => {
+    const initial = createDemoState(NOW);
+    const input = { outcome: "no_answer" as const, note: "Bez odezvy", scheduledAt: NOW + 60_000 };
+    const first = applyBoardOperation(initial, { kind: "outcome", contactId: "demo-4", input }, NOW);
+
+    expect(first.accepted).toBe(true);
+    if (!first.accepted) return;
+    expect(getAttemptCount(first.contact)).toBe(getAttemptCount(contact(initial, "demo-4")) + 1);
+    expect(first.contact.history.filter((entry) => entry.type === "call_attempt" && entry.at === NOW)).toHaveLength(1);
+    expect(first.contact.nextActivity?.dueAt).toBe(input.scheduledAt);
+
+    const duplicate = applyBoardOperation(first.state, { kind: "outcome", contactId: "demo-4", input }, NOW + 1_000);
+    expect(duplicate).toMatchObject({ accepted: false, reason: "stale", state: first.state });
+    expect(getAttemptCount(contact(first.state, "demo-4"))).toBe(getAttemptCount(first.contact));
   });
 
   it("zachová přesné krátké intervaly tipaře 60 a 30 sekund", () => {

@@ -204,6 +204,35 @@ export function recordCallOutcome(
   );
 }
 
+export type BoardOperation =
+  | { kind: "move"; contactId: string; target: Contact["status"] }
+  | { kind: "schedule"; contactId: string; input: ScheduleInput }
+  | { kind: "outcome"; contactId: string; input: OutcomeInput };
+
+export type BoardOperationResult =
+  | { accepted: true; state: DemoState; contact: Contact; at: number }
+  | { accepted: false; state: DemoState | null; reason: "unavailable" | "expired" | "stale" };
+
+export function applyBoardOperation(
+  state: DemoState | null,
+  operation: BoardOperation,
+  now: number,
+): BoardOperationResult {
+  if (!state) return { accepted: false, state, reason: "unavailable" };
+  const next = operation.kind === "move"
+    ? moveContact(state, operation.contactId, operation.target, now)
+    : operation.kind === "schedule"
+      ? scheduleActivity(state, operation.contactId, operation.input, now)
+      : recordCallOutcome(state, operation.contactId, operation.input, now);
+  if (next === state) {
+    const dueAt = operation.kind === "schedule" ? operation.input.dueAt : operation.kind === "outcome" ? operation.input.scheduledAt : undefined;
+    return { accepted: false, state, reason: dueAt !== undefined && dueAt <= now ? "expired" : "stale" };
+  }
+  const contact = next.contacts.find((item) => item.id === operation.contactId);
+  if (!contact) return { accepted: false, state, reason: "stale" };
+  return { accepted: true, state: next, contact, at: now };
+}
+
 /**
  * Po uplynutí termínu a zdrojové tolerance zpřístupní hovor právě jednou.
  * Nevytváří pokus a nemění termín, takže kontakt zůstane viditelně po termínu.

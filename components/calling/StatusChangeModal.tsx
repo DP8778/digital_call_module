@@ -1,11 +1,12 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
+import { useState } from "react";
 import AccessibleModal from "./AccessibleModal";
 import { COLUMN_LABEL_CS } from "./allowedMoves";
 import { ACTIVITY_LABEL } from "./labels";
 import { formatPragueDateTimePrecise } from "./time";
-import type { ColumnId, Contact } from "./types";
+import type { ColumnId, Contact, SubmitResult } from "./types";
 
 export default function StatusChangeModal({
   contact,
@@ -16,8 +17,10 @@ export default function StatusChangeModal({
   contact: Contact;
   target: ColumnId;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => SubmitResult;
 }) {
+  const [error, setError] = useState("");
+
   return (
     <AccessibleModal title="Potvrdit změnu stavu" description={`${contact.name} → ${COLUMN_LABEL_CS[target]}`} onClose={onClose} layer="nested">
       <div className="space-y-5 p-5 sm:p-6">
@@ -25,9 +28,10 @@ export default function StatusChangeModal({
           <AlertTriangle className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
           <div><h3 className="font-semibold">Tato změna zruší naplánovanou aktivitu</h3>{contact.nextActivity ? <p className="mt-1 text-sm leading-relaxed">{ACTIVITY_LABEL[contact.nextActivity.type]} · {formatPragueDateTimePrecise(contact.nextActivity.dueAt)}</p> : null}<p className="mt-2 text-sm leading-relaxed">Zrušení se zapíše do historie kontaktu, aby se další krok neztratil beze stopy.</p></div>
         </div>
+        {error ? <p role="alert" className="tone-danger rounded-xl border p-3 text-sm font-medium">{error}</p> : null}
         <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end" style={{ borderColor: "var(--dc-border)" }}>
           <button type="button" onClick={onClose} className="button-secondary">Ponechat současný stav</button>
-          <button type="button" onClick={() => { onConfirm(); onClose(); }} className="button-danger"><AlertTriangle className="size-4 shrink-0" aria-hidden="true" />Změnit stav a zrušit aktivitu</button>
+          <button type="button" onClick={() => { const result = onConfirm(); if (result.accepted) onClose(); else setError(result.message); }} className="button-danger"><AlertTriangle className="size-4 shrink-0" aria-hidden="true" />Změnit stav a zrušit aktivitu</button>
         </div>
       </div>
     </AccessibleModal>

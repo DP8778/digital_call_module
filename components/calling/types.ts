@@ -72,4 +72,7 @@ export type ActionFeedback = {
   title: string;
   description: string;
   nextStep?: string;
+  tone?: "success" | "error";
 };
+
+export type SubmitResult = { accepted: true } | { accepted: false; message: string; reason: "expired" | "stale" | "unavailable" };

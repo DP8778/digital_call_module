@@ -12,7 +12,7 @@ import {
   relativeDayLabel,
   toPragueDateTimeInput,
 } from "./time";
-import type { CallOutcome, Contact, OutcomeInput } from "./types";
+import type { CallOutcome, Contact, OutcomeInput, SubmitResult } from "./types";
 
 const OPTIONS: { value: CallOutcome; label: string; description: string }[] = [
   { value: "no_answer", label: "Nedovoláno", description: "Zapíše pokus a připraví další hovor." },
@@ -31,7 +31,7 @@ function formatDelay(seconds: number): string {
   return minutes === 1 ? "1 minutu" : minutes >= 2 && minutes <= 4 ? `${minutes} minuty` : `${minutes} minut`;
 }
 
-export default function OutcomeModal({ contact, now, onClose, onSubmit }: { contact: Contact; now: number; onClose: () => void; onSubmit: (input: OutcomeInput) => void }) {
+export default function OutcomeModal({ contact, now, onClose, onSubmit }: { contact: Contact; now: number; onClose: () => void; onSubmit: (input: OutcomeInput) => SubmitResult }) {
   const initialRecommendation = getRecommendedFollowUpAt(contact, now);
   const [outcome, setOutcome] = useState<CallOutcome>("no_answer");
   const [note, setNote] = useState("");
@@ -41,6 +41,7 @@ export default function OutcomeModal({ contact, now, onClose, onSubmit }: { cont
   const [useRecommended, setUseRecommended] = useState(true);
   const [dateValue, setDateValue] = useState(() => toPragueDateTimeInput(ceilToMinute(initialRecommendation)));
   const [error, setError] = useState("");
+  const [invalidDate, setInvalidDate] = useState(false);
   const groupName = useId();
   const noteId = useId();
   const dateId = useId();
@@ -63,34 +64,46 @@ export default function OutcomeModal({ contact, now, onClose, onSubmit }: { cont
     setRecommendedAt(next);
     setDateValue(toPragueDateTimeInput(ceilToMinute(next)));
     setError("");
+    setInvalidDate(false);
   }
 
-  function selectOutcome(value: CallOutcome) {
+  function handleSelectOutcome(value: CallOutcome, currentTime: number) {
     setOutcome(value);
     setError("");
+    setInvalidDate(false);
+    setClockNow(currentTime);
     if (value === "no_answer") {
       setUseRecommended(true);
-      refreshRecommendation(clockNow);
+      refreshRecommendation(currentTime);
     }
-    if (value === "meeting_booked") setDateValue(toPragueDateTimeInput(addPragueCalendarDays(clockNow, 1, 10)));
-    if (value === "call_later") setDateValue(toPragueDateTimeInput(addPragueCalendarDays(clockNow, 1, 9)));
+    if (value === "meeting_booked") setDateValue(toPragueDateTimeInput(addPragueCalendarDays(currentTime, 1, 10)));
+    if (value === "call_later") setDateValue(toPragueDateTimeInput(addPragueCalendarDays(currentTime, 1, 9)));
   }
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    const submittedAt = Date.now();
+    setClockNow(submittedAt);
     const scheduledAt = outcome === "disqualified"
       ? undefined
       : outcome === "no_answer" && useRecommended
         ? recommendedAt
         : parsePragueDateTime(dateValue) ?? undefined;
-    if (outcome !== "disqualified" && (!scheduledAt || scheduledAt <= clockNow)) {
+    if (outcome !== "disqualified" && (!scheduledAt || scheduledAt <= submittedAt)) {
+      setInvalidDate(true);
       setError(outcome === "no_answer" && useRecommended
         ? "Doporučený krátký interval už uplynul. Obnovte doporučení nebo zvolte vlastní termín."
         : "Zadejte platný budoucí termín v časovém pásmu Europe/Prague.");
       return;
     }
-    onSubmit({ outcome, note, scheduledAt });
-    onClose();
+    const result = onSubmit({ outcome, note, scheduledAt });
+    if (result.accepted) onClose();
+    else {
+      setInvalidDate(result.reason === "expired");
+      setError(result.reason === "expired" && outcome === "no_answer" && useRecommended
+        ? "Doporučený krátký interval už uplynul. Obnovte doporučení nebo zvolte vlastní termín."
+        : result.message);
+    }
   }
 
   return (
@@ -101,7 +114,7 @@ export default function OutcomeModal({ contact, now, onClose, onSubmit }: { cont
           <div className="grid gap-2">
             {OPTIONS.map((option) => (
               <label key={option.value} data-selected={outcome === option.value} data-tone={option.value === "disqualified" ? "danger" : undefined} className="choice-card flex cursor-pointer gap-3 p-3">
-                <input type="radio" name={groupName} value={option.value} checked={outcome === option.value} onChange={() => selectOutcome(option.value)} className={`${option.value === "disqualified" ? "choice-radio-danger" : "choice-radio"} mt-1`} />
+                <input type="radio" name={groupName} value={option.value} checked={outcome === option.value} onChange={() => handleSelectOutcome(option.value, Date.now())} className={`${option.value === "disqualified" ? "choice-radio-danger" : "choice-radio"} mt-1`} />
                 <span><span className="dc-text-primary flex items-center gap-1.5 text-sm font-semibold">{option.value === "disqualified" ? <AlertTriangle className="size-4 shrink-0" aria-hidden="true" /> : null}{option.label}</span><span className="dc-text-muted mt-0.5 block text-xs leading-relaxed">{option.description}</span></span>
               </label>
             ))}
@@ -109,15 +122,15 @@ export default function OutcomeModal({ contact, now, onClose, onSubmit }: { cont
         </fieldset>
 
         {outcome === "no_answer" ? (
-          <fieldset aria-describedby={error && useRecommended ? `${dateId}-error` : undefined}>
+          <fieldset aria-describedby={error && useRecommended && invalidDate ? `${dateId}-error` : undefined}>
             <legend className="dc-text-primary text-sm font-semibold">Kdy se ozvat znovu?</legend>
             <div className="mt-2 grid gap-2">
               <label data-selected={useRecommended} className="choice-card flex cursor-pointer gap-3 p-3">
-                <input type="radio" name="follow-up-mode" checked={useRecommended} onChange={() => { setUseRecommended(true); setError(""); }} className="choice-radio mt-1" />
+                <input type="radio" name="follow-up-mode" checked={useRecommended} onChange={() => { setUseRecommended(true); setError(""); setInvalidDate(false); }} className="choice-radio mt-1" />
                 <span className="min-w-0"><span className="dc-text-primary flex items-center gap-1.5 text-sm font-semibold"><Clock3 className="dc-text-muted size-4" aria-hidden="true" />Použít přesné doporučení</span><span className="dc-text-primary mt-1 block text-sm">Za {formatDelay(exactDelaySeconds)} · {relativeDayLabel(recommendedAt, clockNow)} · přesně {formatPragueTimeWithSeconds(recommendedAt)}</span><span className="dc-text-muted mt-1 block text-xs leading-relaxed">Zděděný, dosud nepotvrzený interval z původního prototypu. Uloží se přesně na sekundy.</span></span>
               </label>
               <label data-selected={!useRecommended} className="choice-card flex cursor-pointer gap-3 p-3">
-                <input type="radio" name="follow-up-mode" checked={!useRecommended} onChange={() => { setUseRecommended(false); setDateValue(toPragueDateTimeInput(ceilToMinute(Math.max(recommendedAt, clockNow + 60_000)))); setError(""); }} className="choice-radio mt-1" />
+                <input type="radio" name="follow-up-mode" checked={!useRecommended} onChange={() => { const currentTime = Date.now(); setUseRecommended(false); setDateValue(toPragueDateTimeInput(ceilToMinute(Math.max(recommendedAt, currentTime + 60_000)))); setClockNow(currentTime); setError(""); setInvalidDate(false); }} className="choice-radio mt-1" />
                 <span><span className="dc-text-primary block text-sm font-semibold">Zvolit vlastní termín</span><span className="dc-text-muted mt-1 block text-xs">Vlastní termín se zadává s přesností na minuty.</span></span>
               </label>
             </div>
@@ -127,14 +140,14 @@ export default function OutcomeModal({ contact, now, onClose, onSubmit }: { cont
         {showsCustomDate ? (
           <div>
             <label htmlFor={dateId} className="dc-text-primary text-sm font-semibold">{dateLabel}</label>
-            <input id={dateId} type="datetime-local" value={dateValue} onChange={(event) => { setDateValue(event.target.value); setError(""); }} className="field mt-2 h-11 w-full px-3 text-sm" aria-describedby={`${dateId}-hint ${error ? `${dateId}-error` : ""}`} aria-invalid={Boolean(error)} />
+            <input id={dateId} type="datetime-local" value={dateValue} onChange={(event) => { setDateValue(event.target.value); setError(""); setInvalidDate(false); }} className="field mt-2 h-11 w-full px-3 text-sm" aria-describedby={`${dateId}-hint ${invalidDate ? `${dateId}-error` : ""}`} aria-invalid={invalidDate} />
             <p id={`${dateId}-hint`} className="dc-text-muted mt-1.5 text-xs">Termín musí být v budoucnosti. Zobrazení: Praha.</p>
           </div>
         ) : null}
 
         {error ? (
           <div id={`${dateId}-error`} role="alert" className="tone-danger flex items-start gap-2 rounded-xl border p-3 text-sm font-medium">
-            <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" /><span>{error}{outcome === "no_answer" && useRecommended ? <button type="button" onClick={() => refreshRecommendation(clockNow)} className="focus-ring ml-2 rounded px-1 font-semibold underline underline-offset-2">Obnovit doporučení</button> : null}</span>
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" /><span>{error}{outcome === "no_answer" && useRecommended && invalidDate ? <button type="button" onClick={() => refreshRecommendation(Date.now())} className="focus-ring ml-2 rounded px-1 font-semibold underline underline-offset-2">Obnovit doporučení</button> : null}</span>
           </div>
         ) : null}
 

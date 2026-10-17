@@ -30,6 +30,7 @@ npm run build
 - Kontextový detail v pořadí důvod → kontext → hlavní akce → příští krok → historie.
 - Záznam výsledku hovoru: nedovoláno, schůzka, ozvat se později nebo vyřadit.
 - Viditelné potvrzení výsledku s novým stavem, přesným dalším krokem a volitelným návratem do fronty. Focus se vrátí na původní viditelný kontakt, nebo bezpečně na nadpis fronty, pokud už kontakt filtru neodpovídá.
+- Formulář se zavře a úspěch ukáže pouze při doménou přijaté změně. Při uplynutí termínu ponechá rozepsané údaje a nabídne opravu; potvrzení vychází ze skutečného nového stavu v paměti, ne ze záměru uživatele ani ze záruky zápisu na disk.
 - Samostatnou úpravu termínu aktivity bez skryté změny procesního stavu; koncové stavy novou aktivitu nepovolí.
 - Potvrzení změny stavu, která zruší existující aktivitu, a dohledatelný zápis zrušení v historii.
 - Kanban jako přehled procesu se všemi šesti stavy.

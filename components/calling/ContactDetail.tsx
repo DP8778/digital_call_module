@@ -77,8 +77,8 @@ export default function ContactDetail({
     <AccessibleModal title={contact.name} description={`${contact.subtype} · ${contact.city}`} onClose={onClose} size="lg" active={active}>
       <div className="p-4 sm:p-5">
         {feedback ? (
-          <section role="status" className="tone-success mb-5 rounded-2xl border p-4">
-            <div className="flex gap-3"><CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden="true" /><div className="min-w-0 flex-1"><h3 className="font-semibold">{feedback.title}</h3><p className="mt-1 text-sm">{feedback.description}</p><div className="mt-2"><StatusPill status={contact.status} /></div>{feedback.nextStep ? <p className="mt-2 text-sm font-semibold">Další krok: {feedback.nextStep}</p> : null}</div></div>
+          <section role="status" className={`${feedback.tone === "error" ? "tone-danger" : "tone-success"} mb-5 rounded-2xl border p-4`}>
+            <div className="flex gap-3">{feedback.tone === "error" ? <AlertCircle className="mt-0.5 size-5 shrink-0" aria-hidden="true" /> : <CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden="true" />}<div className="min-w-0 flex-1"><h3 className="font-semibold">{feedback.title}</h3><p className="mt-1 text-sm">{feedback.description}</p><div className="mt-2"><StatusPill status={contact.status} /></div>{feedback.nextStep ? <p className="mt-2 text-sm font-semibold">Další krok: {feedback.nextStep}</p> : null}</div></div>
             <div className="mt-4 flex flex-wrap gap-2 pl-8"><button type="button" onClick={onBackToQueue} className="button-secondary h-10 px-3"><ArrowLeft className="size-4" aria-hidden="true" />Zpět do fronty</button><button type="button" onClick={onDismissFeedback} className="button-quiet h-10 px-3">Zůstat v detailu</button></div>
           </section>
         ) : null}

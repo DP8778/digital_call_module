@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   persistDemoState,
   readDemoState,
@@ -9,10 +9,10 @@ import {
   type StorageNotice,
 } from "./callingStorage";
 import {
+  applyBoardOperation,
   applyTimeRules,
-  moveContact as moveContactInState,
-  recordCallOutcome,
-  scheduleActivity as scheduleActivityInState,
+  type BoardOperation,
+  type BoardOperationResult,
 } from "./stateLogic";
 import type { ColumnId, DemoState, OutcomeInput, ScheduleInput } from "./types";
 
@@ -26,6 +26,7 @@ function getLocalStorage(): Storage | null {
 
 export function useCallingBoardState() {
   const [state, setState] = useState<DemoState | null>(null);
+  const stateRef = useRef<DemoState | null>(null);
   const [persistence, setPersistence] = useState<PersistenceState>("initializing");
   const [storageNotice, setStorageNotice] = useState<StorageNotice>(null);
 
@@ -36,6 +37,7 @@ export function useCallingBoardState() {
       const restored = readDemoState(getLocalStorage(), Date.now());
       setPersistence(restored.persistence);
       setStorageNotice(restored.notice);
+      stateRef.current = restored.state;
       setState(restored.state);
     });
     return () => { cancelled = true; };
@@ -54,33 +56,40 @@ export function useCallingBoardState() {
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setState((current) => (current ? applyTimeRules(current, Date.now()) : current));
+      const current = stateRef.current;
+      if (!current) return;
+      const next = applyTimeRules(current, Date.now());
+      if (next !== current) {
+        stateRef.current = next;
+        setState(next);
+      }
     }, 15_000);
     return () => window.clearInterval(timer);
   }, []);
 
-  const moveContact = useCallback((contactId: string, target: ColumnId) => {
-    setState((current) =>
-      current ? moveContactInState(current, contactId, target, Date.now()) : current,
-    );
+  const commit = useCallback((operation: BoardOperation): BoardOperationResult => {
+    const result = applyBoardOperation(stateRef.current, operation, Date.now());
+    if (result.accepted) {
+      stateRef.current = result.state;
+      setState(result.state);
+    }
+    return result;
   }, []);
 
-  const recordOutcome = useCallback((contactId: string, input: OutcomeInput) => {
-    setState((current) =>
-      current ? recordCallOutcome(current, contactId, input, Date.now()) : current,
-    );
-  }, []);
+  const moveContact = useCallback((contactId: string, target: ColumnId) =>
+    commit({ kind: "move", contactId, target }), [commit]);
 
-  const scheduleActivity = useCallback((contactId: string, input: ScheduleInput) => {
-    setState((current) =>
-      current ? scheduleActivityInState(current, contactId, input, Date.now()) : current,
-    );
-  }, []);
+  const recordOutcome = useCallback((contactId: string, input: OutcomeInput) =>
+    commit({ kind: "outcome", contactId, input }), [commit]);
+
+  const scheduleActivity = useCallback((contactId: string, input: ScheduleInput) =>
+    commit({ kind: "schedule", contactId, input }), [commit]);
 
   const resetDemo = useCallback(() => {
     const reset = resetDemoState(getLocalStorage(), Date.now());
     setPersistence(reset.persistence);
     setStorageNotice(reset.notice);
+    stateRef.current = reset.state;
     setState(reset.state);
   }, []);
 

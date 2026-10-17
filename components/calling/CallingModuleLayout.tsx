@@ -12,10 +12,16 @@ import ResetDemoModal from "./ResetDemoModal";
 import ScheduleModal from "./ScheduleModal";
 import StatusChangeModal from "./StatusChangeModal";
 import TodayView from "./TodayView";
-import { formatPragueDateTime, formatPragueDateTimePrecise } from "./time";
-import type { ActionFeedback, ColumnId, Contact, OutcomeInput, ScheduleInput } from "./types";
+import { formatPragueDateTimePrecise } from "./time";
+import type { ActionFeedback, ColumnId, Contact, OutcomeInput, ScheduleInput, SubmitResult } from "./types";
 import { useCallingUiState, type CallingView } from "./uiState";
 import { useCallingBoardState } from "./useCallingBoardState";
+
+function rejectionMessage(reason: "unavailable" | "expired" | "stale"): string {
+  if (reason === "expired") return "Termín mezitím uplynul. Zvolte nový budoucí termín.";
+  if (reason === "unavailable") return "Demo ještě není připravené. Zkuste akci potvrdit znovu.";
+  return "Změna nebyla přijata. Kontakt se mohl mezitím změnit; zkontrolujte jej a potvrďte akci znovu.";
+}
 
 export default function CallingModuleLayout() {
   const board = useCallingBoardState();
@@ -60,13 +66,20 @@ export default function CallingModuleLayout() {
     setNow(Date.now());
   }
 
-  function applyMove(target: ColumnId) {
-    if (!selectedContact) return;
-    const cancelled = Boolean(selectedContact.nextActivity) && (target === "backlog" || target === "listed" || target === "disqualified");
-    board.moveContact(selectedContact.id, target);
-    const description = `Kontakt je nyní ve stavu „${COLUMN_LABEL_CS[target]}“.${cancelled ? " Původní aktivita byla zrušena a zapsána do historie." : ""}`;
+  function applyMove(target: ColumnId): SubmitResult {
+    if (!selectedContact) return { accepted: false, reason: "stale", message: "Kontakt už není dostupný. Otevřete jej znovu z fronty." };
+    const result = board.moveContact(selectedContact.id, target);
+    if (!result.accepted) {
+      const message = rejectionMessage(result.reason);
+      setFeedback({ title: "Změna se neprovedla", description: message, tone: "error" });
+      setAnnouncement(message);
+      return { accepted: false, reason: result.reason, message };
+    }
+    const cancelled = result.contact.history.some((entry) => entry.type === "activity_cancelled" && entry.at === result.at);
+    const description = `Kontakt je nyní ve stavu „${COLUMN_LABEL_CS[result.contact.status]}“.${cancelled ? " Původní aktivita byla zrušena a zapsána do historie." : ""}`;
     setFeedback({ title: "Stav kontaktu byl změněn", description });
     setAnnouncement(description);
+    return { accepted: true };
   }
 
   function requestMove(target: ColumnId) {
@@ -89,38 +102,35 @@ export default function CallingModuleLayout() {
     setFeedback(null);
   }
 
-  function handleOutcome(input: OutcomeInput) {
-    if (!selectedContact) return;
-    const outcomeLabel = input.outcome === "no_answer"
-      ? "Nedovoláno"
-      : input.outcome === "meeting_booked"
-        ? "Domluvena schůzka"
-        : input.outcome === "call_later"
-          ? "Ozvat se později"
-          : "Kontakt vyřazen";
-    const target: ColumnId = input.outcome === "meeting_booked"
-      ? "meeting"
-      : input.outcome === "disqualified"
-        ? "disqualified"
-        : "call_later";
-    const nextStep = input.scheduledAt
-      ? `${input.outcome === "meeting_booked" ? ACTIVITY_LABEL.meeting : ACTIVITY_LABEL.call} · ${formatPragueDateTimePrecise(input.scheduledAt)}`
+  function handleOutcome(input: OutcomeInput): SubmitResult {
+    if (!selectedContact) return { accepted: false, reason: "stale", message: "Kontakt už není dostupný. Otevřete jej znovu z fronty." };
+    const result = board.recordOutcome(selectedContact.id, input);
+    if (!result.accepted) return { accepted: false, reason: result.reason, message: rejectionMessage(result.reason) };
+    const actual = result.contact;
+    const attempt = actual.history.find((entry) => entry.type === "call_attempt" && entry.at === result.at);
+    const nextStep = actual.nextActivity
+      ? `${ACTIVITY_LABEL[actual.nextActivity.type]} · ${formatPragueDateTimePrecise(actual.nextActivity.dueAt)}`
       : "Žádná další aktivita";
-    board.recordOutcome(selectedContact.id, input);
     setFeedback({
-      title: input.outcome === "disqualified" ? "Vyřazení bylo uloženo" : `${outcomeLabel} bylo zaznamenáno`,
-      description: `Kontakt se přesunul do stavu „${COLUMN_LABEL_CS[target]}“.`,
+      title: actual.status === "disqualified" ? "Kontakt byl vyřazen" : "Výsledek hovoru byl zaznamenán",
+      description: `${attempt?.label ?? "Výsledek"}. Kontakt je nyní ve stavu „${COLUMN_LABEL_CS[actual.status]}“.`,
       nextStep,
     });
-    setAnnouncement(`${outcomeLabel} bylo zaznamenáno. Nový stav: ${COLUMN_LABEL_CS[target]}. Další krok: ${nextStep}.`);
+    setAnnouncement(`Výsledek hovoru byl zaznamenán: ${attempt?.label ?? "výsledek"}. Nový stav: ${COLUMN_LABEL_CS[actual.status]}. Další krok: ${nextStep}.`);
+    return { accepted: true };
   }
 
-  function handleSchedule(input: ScheduleInput) {
-    if (!selectedContact) return;
-    board.scheduleActivity(selectedContact.id, input);
-    const nextStep = `${ACTIVITY_LABEL[input.activityType]} · ${formatPragueDateTime(input.dueAt)}`;
-    setFeedback({ title: "Termín byl uložen", description: "Procesní stav kontaktu se nezměnil.", nextStep });
-    setAnnouncement(`Termín další aktivity byl uložen: ${nextStep}.`);
+  function handleSchedule(input: ScheduleInput): SubmitResult {
+    if (!selectedContact) return { accepted: false, reason: "stale", message: "Kontakt už není dostupný. Otevřete jej znovu z fronty." };
+    const result = board.scheduleActivity(selectedContact.id, input);
+    if (!result.accepted) return { accepted: false, reason: result.reason, message: rejectionMessage(result.reason) };
+    const actual = result.contact;
+    const nextStep = actual.nextActivity
+      ? `${ACTIVITY_LABEL[actual.nextActivity.type]} · ${formatPragueDateTimePrecise(actual.nextActivity.dueAt)}`
+      : "Žádná další aktivita";
+    setFeedback({ title: "Termín byl nastaven v demu", description: `Procesní stav: „${COLUMN_LABEL_CS[actual.status]}“.`, nextStep });
+    setAnnouncement(`Termín další aktivity je nastaven: ${nextStep}.`);
+    return { accepted: true };
   }
 
   function resetDemo() {
