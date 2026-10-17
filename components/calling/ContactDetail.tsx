@@ -4,10 +4,11 @@ import { AlertCircle, ArrowLeft, CalendarClock, CheckCircle2, ChevronDown, Clock
 import AccessibleModal from "./AccessibleModal";
 import { allowedMoves, COLUMN_LABEL_CS } from "./allowedMoves";
 import { ACTIVITY_LABEL, SOURCE_LABEL, TYPE_LABEL } from "./labels";
-import { formatAttemptCount, getAttentionReason, getQueueGroup } from "./queueLogic";
+import { formatAttemptCount } from "./queueLogic";
+import { getQueuePresentation } from "./queuePresentation";
 import { getAttemptCount } from "./stateLogic";
 import StatusPill from "./StatusPill";
-import { formatContextualPragueDateTime, formatPragueDateTime } from "./time";
+import { formatContextualPragueDateTime, formatPragueDateTime, formatPragueDateTimePrecise } from "./time";
 import type { ActionFeedback, ColumnId, Contact } from "./types";
 
 export default function ContactDetail({
@@ -34,8 +35,18 @@ export default function ContactDetail({
   onSchedule: () => void;
 }) {
   const attempts = getAttemptCount(contact);
-  const queueGroup = getQueueGroup(contact, now);
-  const activityOverdue = Boolean(contact.nextActivity && contact.nextActivity.dueAt < now);
+  const attention = getQueuePresentation(contact, now);
+  const attentionTone = attention.kind === "overdue"
+    ? "urgency-overdue"
+    : attention.kind === "ready" || attention.kind === "missing"
+      ? "urgency-ready"
+      : "tone-neutral";
+  const attentionInk = attention.kind === "overdue"
+    ? "urgency-overdue-ink"
+    : attention.kind === "ready" || attention.kind === "missing"
+      ? "urgency-ready-ink"
+      : "dc-text-muted";
+  const AttentionIcon = attention.kind === "overdue" ? AlertCircle : attention.kind === "ready" ? PhoneCall : CalendarClock;
   const isTerminal = contact.status === "listed" || contact.status === "disqualified";
   const history = [...contact.history].sort((a, b) => b.at - a.at);
   const lastInteraction = history.find((entry) => entry.type === "call_attempt") ?? history[0];
@@ -72,9 +83,10 @@ export default function ContactDetail({
           </section>
         ) : null}
 
-        <section aria-labelledby="attention-heading" className={`rounded-2xl border px-4 py-3.5 ${queueGroup === "missed" ? "tone-danger" : "tone-neutral"}`}>
-          <div className="flex flex-wrap items-center gap-2">{queueGroup === "missed" ? <AlertCircle className="size-4" aria-hidden="true" /> : null}<StatusPill status={contact.status} /><span className="text-xs font-semibold uppercase tracking-[0.08em] opacity-80">Proč teď?</span></div>
-          <h3 id="attention-heading" className="mt-2 text-base font-semibold sm:text-lg">{getAttentionReason(contact, now)}</h3>
+        <section aria-labelledby="attention-heading" className={`rounded-2xl border px-4 py-3.5 ${attentionTone}`}>
+          <div className="flex flex-wrap items-center gap-2"><AttentionIcon className={`size-4 ${attentionInk}`} aria-hidden="true" /><StatusPill status={contact.status} /><span className="dc-text-muted text-xs font-semibold uppercase tracking-[0.08em]">Proč teď?</span>{attention.badge ? <span className={`urgency-badge ${attentionTone}`}>{attention.badge}</span> : null}</div>
+          <h3 id="attention-heading" className="dc-text-primary mt-2 text-base font-semibold sm:text-lg">{attention.reason}</h3>
+          {attention.dueAt !== null ? <p className="dc-text-muted mt-1 text-sm">{attention.activity} · <time dateTime={new Date(attention.dueAt).toISOString()}>{formatPragueDateTimePrecise(attention.dueAt)}</time></p> : null}
         </section>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(250px,.65fr)]">
@@ -95,13 +107,15 @@ export default function ContactDetail({
             ) : null}
 
             <section aria-labelledby="next-step-heading">
-              <div className="flex items-center justify-between gap-3"><h3 id="next-step-heading" className="dc-text-primary text-sm font-semibold">Příští krok</h3>{!isTerminal ? <button type="button" onClick={onSchedule} className="button-quiet h-9 px-2">{contact.nextActivity ? "Upravit termín" : "Naplánovat aktivitu"}</button> : null}</div>
+              <div className="flex items-center justify-between gap-3"><h3 id="next-step-heading" className="dc-text-primary text-sm font-semibold">Příští krok</h3>{!isTerminal ? <button type="button" onClick={onSchedule} className="button-secondary min-h-9 px-3 py-1.5 text-xs">{contact.nextActivity ? "Upravit termín" : "Naplánovat aktivitu"}</button> : null}</div>
               {isTerminal ? (
                 <div className="tone-neutral mt-3 rounded-2xl border p-4 text-sm">Proces je uzavřený. V tomto stavu nelze plánovat novou aktivitu.</div>
               ) : contact.nextActivity ? (
-                <div className={`next-step-card mt-2.5 flex gap-3 rounded-2xl border p-3.5 ${activityOverdue ? "tone-danger" : "tone-neutral"}`}>{activityOverdue ? <AlertCircle className="mt-0.5 size-5 shrink-0" aria-hidden="true" /> : <CalendarClock className="mt-0.5 size-5 shrink-0" aria-hidden="true" />}<div><div className="font-semibold">{activityOverdue ? "Po termínu · " : ""}{ACTIVITY_LABEL[contact.nextActivity.type]}</div><div className="mt-1 text-sm">{formatContextualPragueDateTime(contact.nextActivity.dueAt, now)}</div></div></div>
+                <div className="next-step-card tone-neutral mt-2.5 flex gap-3 rounded-2xl border p-3.5">{attention.kind === "overdue" ? <AlertCircle className="urgency-overdue-ink mt-0.5 size-5 shrink-0" aria-hidden="true" /> : <CalendarClock className="dc-text-muted mt-0.5 size-5 shrink-0" aria-hidden="true" />}<div><div className="dc-text-primary font-semibold">{attention.kind === "overdue" ? <><span className="urgency-overdue-ink">Po termínu</span> · </> : null}{ACTIVITY_LABEL[contact.nextActivity.type]}</div><div className="dc-text-muted mt-1 text-sm">{formatContextualPragueDateTime(contact.nextActivity.dueAt, now)}</div></div></div>
+              ) : attention.kind === "ready" ? (
+                <div className="next-step-card tone-neutral mt-3 flex gap-3 rounded-2xl border p-3.5 text-sm"><PhoneCall className="urgency-ready-ink mt-0.5 size-5 shrink-0" aria-hidden="true" /><div><div className="urgency-ready-ink font-semibold">Připraveno k hovoru</div><p className="dc-text-muted mt-1">Kontakt nemá naplánovaný termín; hovor lze řešit nyní.</p></div></div>
               ) : (
-                <div className="tone-warning mt-3 flex items-center gap-2 rounded-2xl border border-dashed p-4 text-sm"><AlertCircle className="size-4 shrink-0" aria-hidden="true" />Kontakt nemá naplánovanou příští aktivitu.</div>
+                <div className="next-step-card tone-neutral mt-3 flex gap-3 rounded-2xl border border-dashed p-3.5 text-sm"><CalendarClock className="urgency-ready-ink mt-0.5 size-5 shrink-0" aria-hidden="true" /><div><div className="urgency-ready-ink font-semibold">Chybí další krok</div><p className="dc-text-muted mt-1">Kontakt nemá naplánovanou příští aktivitu.</p></div></div>
               )}
             </section>
 

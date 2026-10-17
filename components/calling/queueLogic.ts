@@ -37,10 +37,27 @@ export function filterQueueContacts(contacts: Contact[], filters: QueueFilters):
     });
 }
 
+export function sortQueueContacts(contacts: Contact[]): Contact[] {
+  return [...contacts].sort((a, b) => {
+    const aDue = a.nextActivity?.dueAt ?? Number.POSITIVE_INFINITY;
+    const bDue = b.nextActivity?.dueAt ?? Number.POSITIVE_INFINITY;
+    return aDue - bDue || a.name.localeCompare(b.name, "cs");
+  });
+}
+
+export function getFirstAttentionContact(selectedContacts: Contact[], now: number): Contact | null {
+  const ordered = sortQueueContacts(getActiveQueueContacts(selectedContacts));
+  return ordered.find((contact) => getQueueGroup(contact, now) === "missed")
+    ?? ordered.find((contact) => needsAttentionNow(contact, now))
+    ?? null;
+}
+
 export function getQueueSummary(allContacts: Contact[], selectedContacts: Contact[], now: number) {
   const activeContacts = getActiveQueueContacts(allContacts);
   return {
     attentionTotal: activeContacts.filter((contact) => needsAttentionNow(contact, now)).length,
+    overdueTotal: activeContacts.filter((contact) => getQueueGroup(contact, now) === "missed").length,
+    readyNowTotal: activeContacts.filter((contact) => contact.status === "to_call" && !contact.nextActivity).length,
     todayRemainingTotal: activeContacts.filter(
       (contact) => getQueueGroup(contact, now) === "today" && !needsAttentionNow(contact, now),
     ).length,
