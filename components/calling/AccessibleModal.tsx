@@ -35,10 +35,12 @@ export default function AccessibleModal({
   }, [onClose]);
 
   useEffect(() => {
-    returnFocusRef.current = document.activeElement as HTMLElement | null;
+    if (!returnFocusRef.current) returnFocusRef.current = document.activeElement as HTMLElement | null;
+    const dialog = dialogRef.current;
     return () => {
       const target = returnFocusRef.current;
-      window.queueMicrotask(() => {
+      window.requestAnimationFrame(() => {
+        if (dialog?.isConnected) return;
         if (target?.isConnected && !target.closest("[inert]")) target.focus();
       });
     };
@@ -63,9 +65,9 @@ export default function AccessibleModal({
       if (event.key !== "Tab" || !dialogRef.current) return;
       const focusable = Array.from(
         dialogRef.current.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), summary, [href], [tabindex]:not([tabindex="-1"])',
         ),
-      );
+      ).filter((element) => element.getClientRects().length > 0 && (!element.closest("details:not([open])") || element.tagName === "SUMMARY"));
       if (focusable.length === 0) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];

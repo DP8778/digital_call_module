@@ -37,9 +37,9 @@ npm run build
 
 ## Vizuální systém
 
-Rozhraní má v obou motivech jedinou značkovou barvu `#DFFF3F` s tmavým textem `#11130A`. Tmavý podklad je grafitový `#0B0D0C`, světlý teplý `#F3F4EF`; obsahové plochy, text, hranice a stavové barvy mají vlastní tokeny pro každý motiv. Žlutá patří značce, aktivní navigaci, hlavní akci a výběru. Naléhavost, chyba a úspěch mají oddělené sémantické významy; běžné procesní štítky jsou neutrální. Motiv lze přepnout v hlavní liště; volba se ukládá lokálně a před hydratací se použije uložená nebo systémová preference. Přepnutí funguje i při blokovaném zápisu do úložiště, jen se pak volba nemusí zachovat po refreshi.
+Světlý motiv používá bílé `#FFFFFF` pozadí i obsah, sekundární plochu `#F7F7F8`, hover `#F2F2F3`, oddělovače `#E5E5E5`, hlavní text `#181818` a sekundární `#626262`. Jediná bílá hlavička sdružuje značku, oba pohledy, označení dema a přepínač motivu; reset je nenápadnou akcí u nadpisu pracovního obsahu. Tmavý motiv má samostatné neutrální tokeny s pozadím `#161616`, obsahem `#222222` a světlým textem `#F2F2F2`. Logo je monochromatické. Jediným barevným akcentem je limetková `#DFFF3F`: velkou plochu dostává jen nedestruktivní potvrzení formuláře, v hlavní pracovní akci je malým detailem ikony a u vybraného řádku úzkým indikátorem. Přepínač motivu respektuje uloženou nebo systémovou preferenci před hydratací. Přepnutí funguje i při blokovaném zápisu do úložiště, jen se pak volba nemusí zachovat po refreshi.
 
-Webová interpretace Liquid Glass je podpůrná a omezená na navigaci, přepínač pohledů a shell dialogů. Kontaktní řádky, Kanban, historie a formulářová těla zůstávají stabilními obsahovými plochami. Vlastní textové helpery mají prefix `dc-`, aby nekolidovaly s Tailwind barvami povrchů. Statický výpočet pro definované kombinace textu a podkladu dává běžnému i sémantickému textu nejméně 5 : 1, primární akci 16,5 : 1 a silným hranicím formulářů nejméně 3 : 1; nejde o ruční kontrolu výsledných obrazovek v prohlížeči. Bez `backdrop-filter` nebo při omezené průhlednosti používá ovládání neprůhledný fallback. Nepodstatné přechody respektují `prefers-reduced-motion`.
+Tlačítka sdílejí zaoblení, horní odlesk, vnitřní hranu a měkký stín. Hlavní krok v detailu je grafitový s bílým textem; potvrzení formuláře je limetkové; sekundární akce je světlá s menší hloubkou; doplňková akce zůstává textová. Destruktivní potvrzení má tmavší obrys, výstražnou ikonu a konkrétní následek v popisku, nikdy limetkovou výplň. Zmeškaná práce, chyba, úspěch a upozornění používají neutrální plochy doplněné jednoznačným textem a ikonou. Glass zůstává jen jemnou podpůrnou vrstvou shellu dialogů; hlavička i obsah jsou neprůhledné. Filtry nemají vnější kartu ani stín a kontakty oddělují linky. Focus zůstává viditelný na světlém, tmavém i limetkovém tlačítku. Staré výpočty kontrastu neověřují tuto novou paletu; úplný audit všech kombinací zatím neproběhl. Vlastní textové helpery mají prefix `dc-`, aby nekolidovaly s Tailwind barvami povrchů. Při omezené průhlednosti má dialog neprůhledný fallback; nepodstatné přechody respektují `prefers-reduced-motion`.
 
 ## Stavový model
 
@@ -89,7 +89,7 @@ Pracovní UI výběr má samostatný verzovaný klíč `obvolavani-portfolio-ui-
 
 ## Podklady pro screenshoty
 
-Lokální Chrome posloužil k vizuální kontrole této iterace. Čtyři srovnatelné kontrolní snímky fronty a detailu v obou motivech z produkčního buildu jsou v [`artifacts/digital-call-visual-qa/`](artifacts/digital-call-visual-qa/README.md). Nejsou to portfoliové exporty; ty zůstávají nedokončené a jejich scénář je v [`capture-checklist.md`](artifacts/digital-call-portfolio/capture-checklist.md).
+Čtyři snímky v [`artifacts/digital-call-visual-qa/`](artifacts/digital-call-visual-qa/README.md) dokumentují **historickou citronovo-grafitovou paletu** a neověřují současný bílý redesign. Nejsou to portfoliové exporty; ty zůstávají nedokončené a jejich scénář je v [`capture-checklist.md`](artifacts/digital-call-portfolio/capture-checklist.md).
 
 ## Přístupnost
 

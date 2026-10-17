@@ -1,6 +1,6 @@
 "use client";
 
-import { RotateCcw, TriangleAlert } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 import AccessibleModal from "./AccessibleModal";
 
 export default function ResetDemoModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: () => void }) {
@@ -16,7 +16,7 @@ export default function ResetDemoModal({ onClose, onConfirm }: { onClose: () => 
         </div>
         <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end" style={{ borderColor: "var(--dc-border)" }}>
           <button type="button" onClick={onClose} className="button-secondary">Ponechat moje změny</button>
-          <button type="button" onClick={() => { onConfirm(); onClose(); }} className="button-danger"><RotateCcw className="size-4" aria-hidden="true" />Obnovit demo</button>
+          <button type="button" onClick={() => { onConfirm(); onClose(); }} className="button-danger"><TriangleAlert className="size-4 shrink-0" aria-hidden="true" />Obnovit demo a odstranit lokální změny</button>
         </div>
       </div>
     </AccessibleModal>

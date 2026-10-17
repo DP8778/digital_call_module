@@ -27,7 +27,7 @@ export default function StatusChangeModal({
         </div>
         <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end" style={{ borderColor: "var(--dc-border)" }}>
           <button type="button" onClick={onClose} className="button-secondary">Ponechat současný stav</button>
-          <button type="button" onClick={() => { onConfirm(); onClose(); }} className="button-danger">Změnit stav a zrušit aktivitu</button>
+          <button type="button" onClick={() => { onConfirm(); onClose(); }} className="button-danger"><AlertTriangle className="size-4 shrink-0" aria-hidden="true" />Změnit stav a zrušit aktivitu</button>
         </div>
       </div>
     </AccessibleModal>

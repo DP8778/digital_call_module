@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, CalendarClock, CheckCircle2, Clock3, Mail, MapPin, Phone, PhoneCall, Play } from "lucide-react";
+import { AlertCircle, ArrowLeft, CalendarClock, CheckCircle2, ChevronDown, Clock3, Mail, MapPin, Phone, PhoneCall, Play } from "lucide-react";
 import AccessibleModal from "./AccessibleModal";
 import { allowedMoves, COLUMN_LABEL_CS } from "./allowedMoves";
 import { ACTIVITY_LABEL, SOURCE_LABEL, TYPE_LABEL } from "./labels";
@@ -67,13 +67,13 @@ export default function ContactDetail({
       <div className="p-4 sm:p-5">
         {feedback ? (
           <section role="status" className="tone-success mb-5 rounded-2xl border p-4">
-            <div className="flex gap-3"><CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden="true" /><div className="min-w-0 flex-1"><h3 className="font-semibold">{feedback.title}</h3><p className="mt-1 text-sm">{feedback.description}</p>{feedback.nextStep ? <p className="mt-1 text-sm font-semibold">Další krok: {feedback.nextStep}</p> : null}</div></div>
-            <div className="mt-4 flex flex-wrap gap-2 pl-8"><button type="button" onClick={onBackToQueue} className="button-primary h-10 px-3"><ArrowLeft className="size-4" aria-hidden="true" />Zpět do fronty</button><button type="button" onClick={onDismissFeedback} className="button-quiet h-10 px-3">Zůstat v detailu</button></div>
+            <div className="flex gap-3"><CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden="true" /><div className="min-w-0 flex-1"><h3 className="font-semibold">{feedback.title}</h3><p className="mt-1 text-sm">{feedback.description}</p><div className="mt-2"><StatusPill status={contact.status} /></div>{feedback.nextStep ? <p className="mt-2 text-sm font-semibold">Další krok: {feedback.nextStep}</p> : null}</div></div>
+            <div className="mt-4 flex flex-wrap gap-2 pl-8"><button type="button" onClick={onBackToQueue} className="button-secondary h-10 px-3"><ArrowLeft className="size-4" aria-hidden="true" />Zpět do fronty</button><button type="button" onClick={onDismissFeedback} className="button-quiet h-10 px-3">Zůstat v detailu</button></div>
           </section>
         ) : null}
 
         <section aria-labelledby="attention-heading" className={`rounded-2xl border px-4 py-3.5 ${queueGroup === "missed" ? "tone-danger" : "tone-neutral"}`}>
-          <div className="flex flex-wrap items-center gap-2"><StatusPill status={contact.status} /><span className="text-xs font-semibold uppercase tracking-[0.08em] opacity-80">Proč teď?</span></div>
+          <div className="flex flex-wrap items-center gap-2">{queueGroup === "missed" ? <AlertCircle className="size-4" aria-hidden="true" /> : null}<StatusPill status={contact.status} /><span className="text-xs font-semibold uppercase tracking-[0.08em] opacity-80">Proč teď?</span></div>
           <h3 id="attention-heading" className="mt-2 text-base font-semibold sm:text-lg">{getAttentionReason(contact, now)}</h3>
         </section>
 
@@ -90,18 +90,18 @@ export default function ContactDetail({
             {primaryAction && PrimaryIcon && !feedback ? (
               <section aria-labelledby="primary-action-heading">
                 <h3 id="primary-action-heading" className="dc-text-primary text-sm font-semibold">Hlavní akce</h3>
-                <button type="button" onClick={primaryAction.action} className="button-primary mt-2.5 h-auto w-full justify-center px-5 py-3 sm:w-auto sm:justify-start"><PrimaryIcon className="size-4" aria-hidden="true" />{primaryAction.label}</button>
+                <button type="button" onClick={primaryAction.action} className="button-work mt-2.5 h-auto w-full justify-center px-3 py-2 sm:w-auto sm:justify-start"><span className="button-icon-slot" aria-hidden="true"><PrimaryIcon className="size-5" /></span><span>{primaryAction.label}</span></button>
               </section>
             ) : null}
 
             <section aria-labelledby="next-step-heading">
-              <div className="flex items-center justify-between gap-3"><h3 id="next-step-heading" className="dc-text-primary text-sm font-semibold">Příští krok</h3>{!isTerminal ? <button type="button" onClick={onSchedule} className="button-quiet dc-text-accent h-9 px-2">{contact.nextActivity ? "Upravit termín" : "Naplánovat aktivitu"}</button> : null}</div>
+              <div className="flex items-center justify-between gap-3"><h3 id="next-step-heading" className="dc-text-primary text-sm font-semibold">Příští krok</h3>{!isTerminal ? <button type="button" onClick={onSchedule} className="button-quiet h-9 px-2">{contact.nextActivity ? "Upravit termín" : "Naplánovat aktivitu"}</button> : null}</div>
               {isTerminal ? (
                 <div className="tone-neutral mt-3 rounded-2xl border p-4 text-sm">Proces je uzavřený. V tomto stavu nelze plánovat novou aktivitu.</div>
               ) : contact.nextActivity ? (
-                <div className={`next-step-card mt-2.5 flex gap-3 rounded-2xl border p-3.5 ${activityOverdue ? "tone-danger" : "tone-neutral"}`}><CalendarClock className="mt-0.5 size-5 shrink-0" aria-hidden="true" /><div><div className="font-semibold">{activityOverdue ? "Po termínu · " : ""}{ACTIVITY_LABEL[contact.nextActivity.type]}</div><div className="mt-1 text-sm">{formatContextualPragueDateTime(contact.nextActivity.dueAt, now)}</div></div></div>
+                <div className={`next-step-card mt-2.5 flex gap-3 rounded-2xl border p-3.5 ${activityOverdue ? "tone-danger" : "tone-neutral"}`}>{activityOverdue ? <AlertCircle className="mt-0.5 size-5 shrink-0" aria-hidden="true" /> : <CalendarClock className="mt-0.5 size-5 shrink-0" aria-hidden="true" />}<div><div className="font-semibold">{activityOverdue ? "Po termínu · " : ""}{ACTIVITY_LABEL[contact.nextActivity.type]}</div><div className="mt-1 text-sm">{formatContextualPragueDateTime(contact.nextActivity.dueAt, now)}</div></div></div>
               ) : (
-                <div className="tone-warning mt-3 rounded-2xl border border-dashed p-4 text-sm">Kontakt nemá naplánovanou příští aktivitu.</div>
+                <div className="tone-warning mt-3 flex items-center gap-2 rounded-2xl border border-dashed p-4 text-sm"><AlertCircle className="size-4 shrink-0" aria-hidden="true" />Kontakt nemá naplánovanou příští aktivitu.</div>
               )}
             </section>
 
@@ -119,17 +119,14 @@ export default function ContactDetail({
               <h3 id="history-heading" className="dc-text-primary text-sm font-semibold">Historie</h3>
               <ol className="mt-3">
                 {history.map((entry, index) => (
-                  <li key={entry.id} className="relative grid grid-cols-[20px_1fr] gap-3 pb-4 last:pb-0">{index < history.length - 1 ? <span className="absolute left-[9px] top-5 h-[calc(100%-10px)] w-px bg-[var(--dc-border-strong)]" aria-hidden="true" /> : null}<span className="relative mt-1 grid size-5 place-items-center rounded-full border bg-[var(--dc-surface-elevated)]" style={{ borderColor: "var(--dc-border-strong)" }}><span className="size-1.5 rounded-full bg-[var(--dc-accent)]" /></span><div><div className="dc-text-primary text-sm font-medium">{entry.label}</div><div className="dc-text-muted mt-0.5 flex items-center gap-1 text-xs"><Clock3 className="size-3" aria-hidden="true" />{formatPragueDateTime(entry.at)}</div>{entry.note ? <p className="surface-subtle dc-text-primary mt-2 rounded-xl px-3 py-2 text-sm leading-relaxed">{entry.note}</p> : null}</div></li>
+                  <li key={entry.id} className="relative grid grid-cols-[20px_1fr] gap-3 pb-4 last:pb-0">{index < history.length - 1 ? <span className="absolute left-[9px] top-5 h-[calc(100%-10px)] w-px bg-[var(--dc-border-strong)]" aria-hidden="true" /> : null}<span className="relative mt-1 grid size-5 place-items-center rounded-full border bg-[var(--dc-surface-elevated)]" style={{ borderColor: "var(--dc-border-strong)" }}><span className="size-1.5 rounded-full bg-[var(--dc-text-faint)]" /></span><div><div className="dc-text-primary text-sm font-medium">{entry.label}</div><div className="dc-text-muted mt-0.5 flex items-center gap-1 text-xs"><Clock3 className="size-3" aria-hidden="true" />{formatPragueDateTime(entry.at)}</div>{entry.note ? <p className="surface-subtle dc-text-primary mt-2 rounded-xl px-3 py-2 text-sm leading-relaxed">{entry.note}</p> : null}</div></li>
                 ))}
               </ol>
             </section>
           </div>
 
           <aside className="process-actions space-y-4 rounded-2xl border p-4 lg:self-start">
-            <section aria-labelledby="status-actions-heading">
-              <h3 id="status-actions-heading" className="dc-text-primary text-sm font-semibold">Povolená změna stavu</h3>
-              {moves.length > 0 ? <div className="mt-3 grid gap-2">{moves.map((target) => <button key={target} type="button" onClick={() => onMove(target)} className="button-secondary h-auto justify-start px-3 py-2.5 text-left">Přesunout do „{COLUMN_LABEL_CS[target]}“</button>)}</div> : <p className="dc-text-muted mt-2 text-sm leading-relaxed">{isTerminal ? "Tento stav je koncový. Kontakt zůstává dohledatelný v Kanbanu." : "Hlavní povolený krok je dostupný výše v detailu."}</p>}
-            </section>
+            {moves.length > 0 ? <details><summary className="focus-ring dc-text-primary flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg text-sm font-semibold [&::-webkit-details-marker]:hidden">Další změny stavu<ChevronDown className="size-4 shrink-0" aria-hidden="true" /></summary><div className="mt-3 grid gap-1">{moves.map((target) => <button key={target} type="button" onClick={() => onMove(target)} className="button-quiet h-auto justify-start px-2 py-2.5 text-left">Přesunout do „{COLUMN_LABEL_CS[target]}“</button>)}</div></details> : <p className="dc-text-muted text-sm leading-relaxed">{isTerminal ? "Tento stav je koncový. Kontakt zůstává dohledatelný v Kanbanu." : "Hlavní povolený krok je dostupný výše v detailu."}</p>}
             <div className="dc-text-muted border-t pt-4 text-xs leading-relaxed" style={{ borderColor: "var(--dc-border)" }}>Demo neuskutečňuje hovory ani neposílá e-maily. Všechna data jsou syntetická a uložená pouze v tomto prohlížeči.</div>
           </aside>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock3 } from "lucide-react";
+import { AlertTriangle, Clock3 } from "lucide-react";
 import { useEffect, useId, useMemo, useState } from "react";
 import AccessibleModal from "./AccessibleModal";
 import { getRecommendedFollowUpAt } from "./stateLogic";
@@ -18,7 +18,7 @@ const OPTIONS: { value: CallOutcome; label: string; description: string }[] = [
   { value: "no_answer", label: "Nedovoláno", description: "Zapíše pokus a připraví další hovor." },
   { value: "meeting_booked", label: "Domluvena schůzka", description: "Přesune kontakt do stavu schůzky a uloží termín." },
   { value: "call_later", label: "Ozvat se později", description: "Uloží další hovor na zvolený termín." },
-  { value: "disqualified", label: "Vyřadit", description: "Ukončí další zpracování kontaktu." },
+  { value: "disqualified", label: "Vyřadit kontakt", description: "Ukončí další zpracování kontaktu." },
 ];
 
 function formatDelay(seconds: number): string {
@@ -100,23 +100,23 @@ export default function OutcomeModal({ contact, now, onClose, onSubmit }: { cont
           <legend className="dc-text-primary mb-2 text-sm font-semibold">Jak hovor dopadl?</legend>
           <div className="grid gap-2">
             {OPTIONS.map((option) => (
-              <label key={option.value} data-selected={outcome === option.value} className="choice-card flex cursor-pointer gap-3 p-3 focus-within:ring-2 focus-within:ring-[var(--dc-focus)]/30">
-                <input type="radio" name={groupName} value={option.value} checked={outcome === option.value} onChange={() => selectOutcome(option.value)} className="choice-radio mt-1" />
-                <span><span className="dc-text-primary block text-sm font-semibold">{option.label}</span><span className="dc-text-muted mt-0.5 block text-xs leading-relaxed">{option.description}</span></span>
+              <label key={option.value} data-selected={outcome === option.value} data-tone={option.value === "disqualified" ? "danger" : undefined} className="choice-card flex cursor-pointer gap-3 p-3">
+                <input type="radio" name={groupName} value={option.value} checked={outcome === option.value} onChange={() => selectOutcome(option.value)} className={`${option.value === "disqualified" ? "choice-radio-danger" : "choice-radio"} mt-1`} />
+                <span><span className="dc-text-primary flex items-center gap-1.5 text-sm font-semibold">{option.value === "disqualified" ? <AlertTriangle className="size-4 shrink-0" aria-hidden="true" /> : null}{option.label}</span><span className="dc-text-muted mt-0.5 block text-xs leading-relaxed">{option.description}</span></span>
               </label>
             ))}
           </div>
         </fieldset>
 
         {outcome === "no_answer" ? (
-          <fieldset>
+          <fieldset aria-describedby={error && useRecommended ? `${dateId}-error` : undefined}>
             <legend className="dc-text-primary text-sm font-semibold">Kdy se ozvat znovu?</legend>
             <div className="mt-2 grid gap-2">
-              <label data-selected={useRecommended} className="choice-card flex cursor-pointer gap-3 p-3 focus-within:ring-2 focus-within:ring-[var(--dc-focus)]/30">
+              <label data-selected={useRecommended} className="choice-card flex cursor-pointer gap-3 p-3">
                 <input type="radio" name="follow-up-mode" checked={useRecommended} onChange={() => { setUseRecommended(true); setError(""); }} className="choice-radio mt-1" />
-                <span className="min-w-0"><span className="dc-text-primary flex items-center gap-1.5 text-sm font-semibold"><Clock3 className="dc-text-accent size-4" aria-hidden="true" />Použít přesné doporučení</span><span className="dc-text-primary mt-1 block text-sm">Za {formatDelay(exactDelaySeconds)} · {relativeDayLabel(recommendedAt, clockNow)} · přesně {formatPragueTimeWithSeconds(recommendedAt)}</span><span className="dc-text-muted mt-1 block text-xs leading-relaxed">Zděděný, dosud nepotvrzený interval z původního prototypu. Uloží se přesně na sekundy.</span></span>
+                <span className="min-w-0"><span className="dc-text-primary flex items-center gap-1.5 text-sm font-semibold"><Clock3 className="dc-text-muted size-4" aria-hidden="true" />Použít přesné doporučení</span><span className="dc-text-primary mt-1 block text-sm">Za {formatDelay(exactDelaySeconds)} · {relativeDayLabel(recommendedAt, clockNow)} · přesně {formatPragueTimeWithSeconds(recommendedAt)}</span><span className="dc-text-muted mt-1 block text-xs leading-relaxed">Zděděný, dosud nepotvrzený interval z původního prototypu. Uloží se přesně na sekundy.</span></span>
               </label>
-              <label data-selected={!useRecommended} className="choice-card flex cursor-pointer gap-3 p-3 focus-within:ring-2 focus-within:ring-[var(--dc-focus)]/30">
+              <label data-selected={!useRecommended} className="choice-card flex cursor-pointer gap-3 p-3">
                 <input type="radio" name="follow-up-mode" checked={!useRecommended} onChange={() => { setUseRecommended(false); setDateValue(toPragueDateTimeInput(ceilToMinute(Math.max(recommendedAt, clockNow + 60_000)))); setError(""); }} className="choice-radio mt-1" />
                 <span><span className="dc-text-primary block text-sm font-semibold">Zvolit vlastní termín</span><span className="dc-text-muted mt-1 block text-xs">Vlastní termín se zadává s přesností na minuty.</span></span>
               </label>
@@ -133,9 +133,8 @@ export default function OutcomeModal({ contact, now, onClose, onSubmit }: { cont
         ) : null}
 
         {error ? (
-          <div id={`${dateId}-error`} role="alert" className="tone-danger rounded-xl border p-3 text-sm font-medium">
-            {error}
-            {outcome === "no_answer" && useRecommended ? <button type="button" onClick={() => refreshRecommendation(clockNow)} className="focus-ring ml-2 rounded px-1 font-semibold underline underline-offset-2">Obnovit doporučení</button> : null}
+          <div id={`${dateId}-error`} role="alert" className="tone-danger flex items-start gap-2 rounded-xl border p-3 text-sm font-medium">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" /><span>{error}{outcome === "no_answer" && useRecommended ? <button type="button" onClick={() => refreshRecommendation(clockNow)} className="focus-ring ml-2 rounded px-1 font-semibold underline underline-offset-2">Obnovit doporučení</button> : null}</span>
           </div>
         ) : null}
 
@@ -144,7 +143,7 @@ export default function OutcomeModal({ contact, now, onClose, onSubmit }: { cont
           <textarea id={noteId} value={note} onChange={(event) => setNote(event.target.value)} rows={3} maxLength={280} placeholder="Co bude užitečné vědět při dalším kontaktu?" className="field mt-2 w-full resize-y px-3 py-2.5 text-sm" />
           <div className="dc-text-faint mt-1 text-right text-xs">{note.length}/280</div>
         </div>
-        <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end" style={{ borderColor: "var(--dc-border)" }}><button type="button" onClick={onClose} className="button-secondary">Zrušit</button><button type="submit" className="button-primary">Uložit výsledek</button></div>
+        <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end" style={{ borderColor: "var(--dc-border)" }}><button type="button" onClick={onClose} className="button-secondary">Zrušit</button><button type="submit" className={outcome === "disqualified" ? "button-danger" : "button-primary"}>{outcome === "disqualified" ? <><AlertTriangle className="size-4 shrink-0" aria-hidden="true" />Vyřadit kontakt a ukončit zpracování</> : "Uložit výsledek"}</button></div>
       </form>
     </AccessibleModal>
   );

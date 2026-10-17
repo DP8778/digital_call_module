@@ -1,10 +1,11 @@
 "use client";
 
-import { KanbanSquare, ListTodo, RotateCcw, X } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import Navbar from "@/components/layout/Navbar";
 import { COLUMN_LABEL_CS } from "./allowedMoves";
 import ContactDetail from "./ContactDetail";
-import { ACTIVITY_LABEL, SOURCE_LABEL } from "./labels";
+import { ACTIVITY_LABEL } from "./labels";
 import OutcomeModal from "./OutcomeModal";
 import ProcessBoard from "./ProcessBoard";
 import ResetDemoModal from "./ResetDemoModal";
@@ -29,8 +30,6 @@ export default function CallingModuleLayout() {
   const [now, setNow] = useState(() => Date.now());
   const [announcement, setAnnouncement] = useState("");
   const [focusRequest, setFocusRequest] = useState<{ contactId: string; view: CallingView } | null>(null);
-
-  const filtersActive = filters.query.trim() !== "" || filters.source !== "all" || filters.status !== "all";
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 60_000);
@@ -109,7 +108,7 @@ export default function CallingModuleLayout() {
       : "Žádná další aktivita";
     board.recordOutcome(selectedContact.id, input);
     setFeedback({
-      title: `${outcomeLabel} bylo zaznamenáno`,
+      title: input.outcome === "disqualified" ? "Vyřazení bylo uloženo" : `${outcomeLabel} bylo zaznamenáno`,
       description: `Kontakt se přesunul do stavu „${COLUMN_LABEL_CS[target]}“.`,
       nextStep,
     });
@@ -133,44 +132,33 @@ export default function CallingModuleLayout() {
 
   if (!board.state) {
     return (
-      <div className="mx-auto w-full max-w-7xl animate-pulse px-4 py-8 sm:px-6" aria-label="Načítání dema">
-        <div className="surface-subtle h-7 w-56 rounded-lg" />
-        <div className="surface-subtle mt-3 h-4 w-96 max-w-full rounded" />
-        <div className="content-surface mt-8 h-20" />
-        <div className="mt-6 space-y-3"><div className="content-surface h-28" /><div className="content-surface h-28" /></div>
-      </div>
+      <>
+        <Navbar view={view} onViewChange={ui.setView} />
+        <main className="flex min-h-0 flex-1 flex-col">
+          <div className="mx-auto w-full max-w-7xl animate-pulse px-4 py-8 sm:px-6" aria-label="Načítání dema">
+            <div className="surface-subtle h-7 w-56 rounded-lg" />
+            <div className="surface-subtle mt-3 h-4 w-96 max-w-full rounded" />
+            <div className="content-surface mt-8 h-20" />
+            <div className="mt-6 space-y-3"><div className="content-surface h-28" /><div className="content-surface h-28" /></div>
+          </div>
+        </main>
+      </>
     );
   }
 
   return (
     <>
-      <div className="control-glass sticky top-[60px] z-30 border-b sm:top-16">
-        <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
-          <nav aria-label="Hlavní zobrazení" className="segmented-control flex rounded-[14px] border p-1">
-            <button type="button" onClick={() => ui.setView("today")} aria-current={view === "today" ? "page" : undefined} data-active={view === "today"} className="segment-button focus-ring flex h-9 items-center gap-2 rounded-[10px] px-3 text-sm font-semibold"><ListTodo className="size-4" aria-hidden="true" />K řešení</button>
-            <button type="button" onClick={() => ui.setView("process")} aria-current={view === "process" ? "page" : undefined} data-active={view === "process"} className="segment-button focus-ring flex h-9 items-center gap-2 rounded-[10px] px-3 text-sm font-semibold"><KanbanSquare className="size-4" aria-hidden="true" />Proces</button>
-          </nav>
-          <button type="button" onClick={() => setResetOpen(true)} className="button-quiet h-10 px-2.5 sm:px-3"><RotateCcw className="size-4" aria-hidden="true" /><span className="hidden sm:inline">Obnovit demo</span><span className="sr-only sm:hidden">Obnovit demo</span></button>
-        </div>
-        {filtersActive ? (
-          <div className="mx-auto flex w-full max-w-[1500px] flex-wrap items-center gap-2 border-t border-[var(--dc-border)] px-4 py-2 sm:px-6" aria-label="Aktivní filtry fronty">
-            <span className="dc-text-muted text-xs font-semibold uppercase tracking-wide">Výběr fronty</span>
-            {filters.query.trim() ? <button type="button" onClick={() => ui.setFilters({ ...filters, query: "" })} className="active-filter focus-ring inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium"><span className="max-w-[min(50vw,18rem)] truncate">„{filters.query.trim()}“</span><X className="size-3 shrink-0" aria-hidden="true" /></button> : null}
-            {filters.source !== "all" ? <button type="button" onClick={() => ui.setFilters({ ...filters, source: "all" })} className="active-filter focus-ring inline-flex min-h-8 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium">{SOURCE_LABEL[filters.source]} <X className="size-3" aria-hidden="true" /></button> : null}
-            {filters.status !== "all" ? <button type="button" onClick={() => ui.setFilters({ ...filters, status: "all" })} className="active-filter focus-ring inline-flex min-h-8 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium">{COLUMN_LABEL_CS[filters.status]} <X className="size-3" aria-hidden="true" /></button> : null}
-            <button type="button" onClick={() => ui.setFilters({ query: "", source: "all", status: "all" })} className="button-quiet h-8 px-2 text-xs">Zrušit vše</button>
-          </div>
-        ) : null}
-      </div>
+      <Navbar view={view} onViewChange={ui.setView} />
+      <main className="flex min-h-0 flex-1 flex-col">
 
       {board.storageNotice ? (
         <div role="status" className="tone-warning border-b px-4 py-3 text-sm">
-          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4"><span>{board.storageNotice === "recovered" ? "Uložená data nebyla platná. Demo bylo bezpečně obnoveno z výchozího datasetu." : board.storageNotice === "read-unavailable" ? "Uložená data se nepodařilo přečíst. Demo běží jen v paměti a změny se automaticky neukládají, aby se původní stav nepřepsal." : "Aktuální změny se nepodařilo uložit. Demo pokračuje v paměti, po zavření ale změny nemusí zůstat zachované."}</span><button type="button" onClick={board.dismissStorageNotice} className="button-quiet h-9 shrink-0 px-2">Skrýt</button></div>
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4"><span className="flex items-start gap-2"><TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" /><span>{board.storageNotice === "recovered" ? "Uložená data nebyla platná. Demo bylo bezpečně obnoveno z výchozího datasetu." : board.storageNotice === "read-unavailable" ? "Uložená data se nepodařilo přečíst. Demo běží jen v paměti a změny se automaticky neukládají, aby se původní stav nepřepsal." : "Aktuální změny se nepodařilo uložit. Demo pokračuje v paměti, po zavření ale změny nemusí zůstat zachované."}</span></span><button type="button" onClick={board.dismissStorageNotice} className="button-quiet h-9 shrink-0 px-2">Skrýt</button></div>
         </div>
       ) : null}
 
       <div aria-live="polite" className="sr-only">{announcement}</div>
-      {view === "today" ? <TodayView contacts={board.state.contacts} now={now} filters={filters} selectedId={selectedId} onFiltersChange={ui.setFilters} onOpenContact={openContact} /> : <ProcessBoard contacts={board.state.contacts} now={now} selectedId={selectedId} onOpenContact={openContact} />}
+      {view === "today" ? <TodayView contacts={board.state.contacts} now={now} filters={filters} selectedId={selectedId} onFiltersChange={ui.setFilters} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} /> : <ProcessBoard contacts={board.state.contacts} now={now} filters={filters} selectedId={selectedId} onFiltersChange={ui.setFilters} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} />}
 
       {selectedContact ? (
         <ContactDetail
@@ -196,6 +184,7 @@ export default function CallingModuleLayout() {
         <StatusChangeModal contact={selectedContact} target={pendingMove} onClose={() => setPendingMove(null)} onConfirm={() => applyMove(pendingMove)} />
       ) : null}
       {resetOpen ? <ResetDemoModal onClose={() => setResetOpen(false)} onConfirm={resetDemo} /> : null}
+      </main>
     </>
   );
 }
