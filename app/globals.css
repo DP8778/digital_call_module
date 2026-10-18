@@ -385,7 +385,6 @@
   .contact-row[data-selected="true"] { background: var(--dc-selected); }
   .contact-row[data-selected="true"]:hover { background: var(--dc-selected); }
   .contact-row[data-selected="true"]::before { content: ""; position: absolute; top: 50%; left: 0; width: 4px; height: 26px; border-radius: 0 4px 4px 0; background: var(--dc-accent); transform: translateY(-50%); }
-  .process-contact[data-selected="true"] { border-color: var(--dc-selection-edge); background: var(--dc-selected); }
   .queue-list-overdue { border-top: 2px solid var(--dc-urgency-overdue-border); }
   .queue-urgency-label { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 700; line-height: 1.2; }
   .row-open-indicator { color: var(--dc-text-muted); background: linear-gradient(180deg, var(--dc-secondary-top), var(--dc-secondary-bottom)); border: 1px solid var(--dc-border); box-shadow: 0 1px 0 var(--dc-secondary-highlight) inset, 0 2px 4px rgba(0, 0, 0, 0.08); }

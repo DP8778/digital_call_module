@@ -48,12 +48,12 @@ function QueueContactRow({ contact, now, selected, index, onOpen }: { contact: C
       : "dc-text-muted";
 
   return (
-    <button id={`queue-contact-${contact.id}`} type="button" data-selected={selected} onClick={onOpen} className={`contact-row focus-ring group grid w-full gap-2 px-4 py-3 text-left transition-colors duration-150 hover:bg-[var(--dc-hover)] sm:grid-cols-[minmax(180px,1.1fr)_minmax(230px,1.4fr)_auto_28px] sm:items-center sm:gap-4 ${index > 0 ? "border-t border-[var(--dc-border)]" : ""}`}>
+    <button id={`queue-contact-${contact.id}`} type="button" data-selected={selected} onClick={onOpen} className={`contact-row focus-ring group grid w-full gap-2 px-4 py-3 text-left transition-colors duration-150 hover:bg-[var(--dc-hover)] sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)_180px_28px] sm:items-center sm:gap-4 ${index > 0 ? "border-t border-[var(--dc-border)]" : ""}`}>
       <div className="min-w-0"><div className="dc-text-primary truncate font-semibold">{contact.name}</div><div className="dc-text-muted mt-0.5 truncate text-sm">{contact.subtype} · {contact.city}</div></div>
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <span className="dc-text-primary text-sm font-semibold">{presentation.activity}</span>
-          {presentation.dueAt !== null ? <time dateTime={new Date(presentation.dueAt).toISOString()} className="dc-text-muted text-sm font-medium">{formatPragueDateTimePrecise(presentation.dueAt)}</time> : null}
+          <span className={`dc-text-primary text-sm font-semibold ${presentation.kind !== "missing" ? "md:w-[72px] md:shrink-0" : ""}`}>{presentation.activity}</span>
+          {presentation.dueAt !== null ? <time dateTime={new Date(presentation.dueAt).toISOString()} className="dc-text-muted text-sm font-medium lg:w-[150px] lg:shrink-0">{formatPragueDateTimePrecise(presentation.dueAt)}</time> : null}
           {presentation.badge ? <span className={`queue-urgency-label ${urgencyInk}`}>{presentation.kind === "overdue" ? <AlertCircle className="size-3.5 shrink-0" aria-hidden="true" /> : presentation.kind === "ready" ? <PhoneCall className="size-3.5 shrink-0" aria-hidden="true" /> : presentation.kind === "missing" ? <CalendarClock className="size-3.5 shrink-0" aria-hidden="true" /> : null}{presentation.badge}</span> : null}
         </div>
         <div className="dc-text-faint mt-1 text-xs">{SOURCE_LABEL[contact.source]} · {formatAttemptCount(getAttemptCount(contact))}</div>
