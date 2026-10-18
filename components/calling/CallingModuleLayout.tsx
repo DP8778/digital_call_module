@@ -1,12 +1,13 @@
 "use client";
 
 import { TriangleAlert } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import { COLUMN_LABEL_CS } from "./allowedMoves";
 import ContactDetail from "./ContactDetail";
 import { ACTIVITY_LABEL } from "./labels";
 import OutcomeModal from "./OutcomeModal";
+import NewContactsView from "./NewContactsView";
 import ProcessBoard from "./ProcessBoard";
 import ResetDemoModal from "./ResetDemoModal";
 import ScheduleModal from "./ScheduleModal";
@@ -27,6 +28,7 @@ export default function CallingModuleLayout() {
   const board = useCallingBoardState();
   const ui = useCallingUiState();
   const { filters, view } = ui.state;
+  const { newFilters } = ui.state;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [outcomeOpen, setOutcomeOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -36,6 +38,9 @@ export default function CallingModuleLayout() {
   const [now, setNow] = useState(() => Date.now());
   const [announcement, setAnnouncement] = useState("");
   const [focusRequest, setFocusRequest] = useState<{ contactId: string; view: CallingView } | null>(null);
+  const [detailOrigin, setDetailOrigin] = useState<CallingView>("today");
+  const [justStarted, setJustStarted] = useState(false);
+  const startedContactRef = useRef<string | null>(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 60_000);
@@ -45,10 +50,14 @@ export default function CallingModuleLayout() {
   useEffect(() => {
     if (selectedId || !focusRequest || focusRequest.view !== view) return;
     const frame = window.requestAnimationFrame(() => {
-      const prefix = view === "today" ? "queue-contact" : "process-contact";
-      const fallbackId = view === "today" ? "queue-heading" : "process-heading";
-      const target = document.getElementById(`${prefix}-${focusRequest.contactId}`)
-        ?? document.getElementById(fallbackId);
+      const prefix = view === "today" ? "queue-contact" : view === "new" ? "new-contact" : "process-contact";
+      const fallbackId = view === "today" ? "queue-heading" : view === "new" ? "new-contacts-heading" : "process-heading";
+      const contactTarget = document.getElementById(`${prefix}-${focusRequest.contactId}`);
+      if (view === "process" && contactTarget) {
+        const closedGroup = contactTarget.closest("details:not([open])");
+        if (closedGroup instanceof HTMLDetailsElement) closedGroup.open = true;
+      }
+      const target = contactTarget ?? document.getElementById(fallbackId);
       target?.focus();
       setFocusRequest(null);
     });
@@ -61,6 +70,8 @@ export default function CallingModuleLayout() {
   );
 
   function openContact(contact: Contact) {
+    startedContactRef.current = null;
+    setDetailOrigin(view);
     setSelectedId(contact.id);
     setFeedback(null);
     setNow(Date.now());
@@ -77,13 +88,19 @@ export default function CallingModuleLayout() {
     }
     const cancelled = result.contact.history.some((entry) => entry.type === "activity_cancelled" && entry.at === result.at);
     const description = `Kontakt je nyní ve stavu „${COLUMN_LABEL_CS[result.contact.status]}“.${cancelled ? " Původní aktivita byla zrušena a zapsána do historie." : ""}`;
-    setFeedback({ title: "Stav kontaktu byl změněn", description });
+    const started = selectedContact.status === "backlog" && target === "to_call";
+    if (started) {
+      startedContactRef.current = selectedContact.id;
+      setJustStarted(true);
+    }
+    setFeedback({ title: started ? "Zpracování kontaktu bylo zahájeno" : "Stav kontaktu byl změněn", description: started ? `${description} Kontakt je připravený k hovoru; žádný pokus ani termín nevznikl.` : description });
     setAnnouncement(description);
     return { accepted: true };
   }
 
   function requestMove(target: ColumnId) {
     if (!selectedContact) return;
+    if (target === "to_call" && selectedContact.status === "backlog" && startedContactRef.current === selectedContact.id) return;
     const cancelsActivity = Boolean(selectedContact.nextActivity) && (target === "backlog" || target === "listed" || target === "disqualified");
     if (cancelsActivity) {
       setPendingMove(target);
@@ -135,6 +152,7 @@ export default function CallingModuleLayout() {
 
   function resetDemo() {
     board.resetDemo();
+    setJustStarted(false);
     ui.reset();
     closeDetail("today");
     setAnnouncement("Demo bylo obnoveno do výchozího stavu.");
@@ -168,7 +186,7 @@ export default function CallingModuleLayout() {
       ) : null}
 
       <div aria-live="polite" className="sr-only">{announcement}</div>
-      {view === "today" ? <TodayView contacts={board.state.contacts} now={now} filters={filters} selectedId={selectedId} onFiltersChange={ui.setFilters} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} /> : <ProcessBoard contacts={board.state.contacts} now={now} filters={filters} selectedId={selectedId} onFiltersChange={ui.setFilters} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} />}
+      {view === "today" ? <TodayView contacts={board.state.contacts} now={now} filters={filters} selectedId={selectedId} onFiltersChange={ui.setFilters} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} onGoToNew={() => ui.setView("new")} /> : view === "new" ? <NewContactsView contacts={board.state.contacts} filters={newFilters} selectedId={selectedId} onFiltersChange={ui.setNewFilters} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} onGoToQueue={() => ui.setView("today")} justStarted={justStarted} /> : <ProcessBoard contacts={board.state.contacts} now={now} filters={filters} selectedId={selectedId} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} />}
 
       {selectedContact ? (
         <ContactDetail
@@ -177,7 +195,9 @@ export default function CallingModuleLayout() {
           active={!outcomeOpen && !scheduleOpen && pendingMove === null}
           feedback={feedback}
           onClose={() => closeDetail()}
-          onBackToQueue={() => closeDetail("today")}
+          originView={detailOrigin}
+          onBackToOrigin={() => closeDetail(detailOrigin)}
+          onOpenInWork={() => closeDetail("today")}
           onDismissFeedback={() => setFeedback(null)}
           onMove={requestMove}
           onRecordOutcome={() => { setNow(Date.now()); setOutcomeOpen(true); }}

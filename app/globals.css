@@ -99,6 +99,7 @@
   --dc-secondary-highlight: rgba(255, 255, 255, 0.9);
   --dc-action-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
   --dc-action-shadow-low: 0 2px 5px rgba(0, 0, 0, 0.12);
+  --dc-process-card-shadow: 0 2px 6px rgba(0, 0, 0, 0.055);
   --dc-disabled-bg: #eeeeee;
   --dc-disabled-text: #626262;
   --dc-overlay: rgba(0, 0, 0, 0.52);
@@ -195,6 +196,7 @@
   --dc-secondary-highlight: rgba(255, 255, 255, 0.16);
   --dc-action-shadow: 0 5px 12px rgba(0, 0, 0, 0.36);
   --dc-action-shadow-low: 0 2px 6px rgba(0, 0, 0, 0.28);
+  --dc-process-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   --dc-disabled-bg: #393939;
   --dc-disabled-text: #bcbcbc;
   --dc-overlay: rgba(0, 0, 0, 0.72);
@@ -380,7 +382,13 @@
   .queue-panel-action { min-height: 48px; }
   .queue-panel-action:focus-visible { outline-color: #ffffff; }
   .queue-list { background: var(--dc-surface); border-top: 1px solid var(--dc-border); border-bottom: 1px solid var(--dc-border); }
-  .process-column { background: var(--dc-surface); border-color: var(--dc-border); }
+  .process-column, .process-closed { background: var(--dc-surface-subtle); border: 1px solid var(--dc-border); border-radius: var(--dc-radius-lg); }
+  .process-contact { background: var(--dc-surface); border: 1px solid var(--dc-border); border-radius: var(--dc-radius); box-shadow: var(--dc-process-card-shadow); }
+  .process-contact:hover { background: var(--dc-hover); border-color: var(--dc-border-strong); }
+  .process-contact[data-selected="true"] { border-color: var(--dc-selection-edge); }
+  .process-closed summary { list-style: none; }
+  .process-closed summary::-webkit-details-marker { display: none; }
+  .process-closed[open] .process-closed-chevron { transform: rotate(180deg); }
   .contact-row { position: relative; }
   .contact-row[data-selected="true"] { background: var(--dc-selected); }
   .contact-row[data-selected="true"]:hover { background: var(--dc-selected); }
@@ -460,7 +468,7 @@
 }
 
 @media (forced-colors: active) {
-  .app-header, .content-surface, .queue-control-panel, .queue-list, .process-column, .elevated-surface, .choice-card, .field, .modal-panel, .modal-content, .button-work, .button-primary, .button-secondary, .button-danger { border: 1px solid CanvasText; box-shadow: none; }
+  .app-header, .content-surface, .queue-control-panel, .queue-list, .process-column, .process-closed, .process-contact, .elevated-surface, .choice-card, .field, .modal-panel, .modal-content, .button-work, .button-primary, .button-secondary, .button-danger { border: 1px solid CanvasText; box-shadow: none; }
   .queue-control-panel { color: CanvasText; background: Canvas; }
   .queue-panel-eyebrow, .queue-panel-count, .queue-panel-caption, .queue-panel-muted, .queue-panel-selection, .queue-panel-overdue, .queue-panel-ready { color: CanvasText; }
   .button-work .button-icon-slot, .contact-row[data-selected="true"]::before { border: 1px solid Highlight; background: Highlight; color: HighlightText; }

@@ -44,7 +44,7 @@ describe("seskupení pracovní fronty", () => {
   it("neskryje naléhavou práci z celkového souhrnu aktivním filtrem", () => {
     const contacts = createDemoState(NOW).contacts;
     const selection = filterQueueContacts(contacts, {
-      query: "Jana Benešová",
+      query: "David Soukup",
       source: "all",
       status: "all",
     });
@@ -103,7 +103,7 @@ describe("seskupení pracovní fronty", () => {
   it("při prázdném nebo nenaléhavém výběru neotevře jiný kontakt ani koncový stav", () => {
     const contacts = createDemoState(NOW).contacts;
     const noMatch = filterQueueContacts(contacts, { query: "neexistující kontakt", source: "all", status: "all" });
-    const nonUrgent = filterQueueContacts(contacts, { query: "Jana Benešová", source: "all", status: "all" });
+    const nonUrgent = filterQueueContacts(contacts, { query: "David Soukup", source: "all", status: "all" });
     const terminal = contacts.filter((contact) => contact.status === "listed" || contact.status === "disqualified");
     expect(getFirstAttentionContact(noMatch, NOW)).toBeNull();
     expect(getFirstAttentionContact(nonUrgent, NOW)).toBeNull();

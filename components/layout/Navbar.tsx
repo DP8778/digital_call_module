@@ -25,6 +25,7 @@ export default function Navbar({ view, onViewChange }: { view: CallingView; onVi
         </div>
         <nav aria-label="Hlavní zobrazení" className="order-3 flex w-full items-center gap-1 sm:order-none sm:w-auto">
           <button type="button" onClick={() => onViewChange("today")} aria-current={view === "today" ? "page" : undefined} data-active={view === "today"} className="nav-link focus-ring h-9 whitespace-nowrap rounded-lg px-3 text-sm font-semibold">K řešení</button>
+          <button type="button" onClick={() => onViewChange("new")} aria-current={view === "new" ? "page" : undefined} data-active={view === "new"} className="nav-link focus-ring h-9 whitespace-nowrap rounded-lg px-3 text-sm font-semibold">Nové kontakty</button>
           <button type="button" onClick={() => onViewChange("process")} aria-current={view === "process" ? "page" : undefined} data-active={view === "process"} className="nav-link focus-ring h-9 whitespace-nowrap rounded-lg px-3 text-sm font-semibold">Proces</button>
         </nav>
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">

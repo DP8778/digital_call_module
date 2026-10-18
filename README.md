@@ -24,6 +24,8 @@ npm run build
 
 ## Co demo ukazuje
 
+- Tři pohledy nad stejnými kontakty: „Nové kontakty“ pro dosud nezahájený Zásobník, „K řešení“ pro rozpracovanou práci a „Proces“ pro všechny procesní stavy. Nové kontakty lze kombinovaně filtrovat podle textu, lokality, nabídky, nemovitosti a zdroje a řadit podle data přidání.
+- Detail nového kontaktu je pouze prohlížení; „Začít zpracovávat“ provede povolený přesun do „K provolání“ bez pokusu či automatického termínu. Potvrzení nabízí návrat k zásobníku nebo otevření v pracovní frontě.
 - Primární frontu „Dnes / K řešení“ rozdělenou podle skutečného času na zmeškané, dnešní, pozdější a nenaplánované aktivity, se zvláštním počtem věcí vyžadujících zásah právě teď.
 - Hledání podle kontaktu či nemovitosti a filtrování podle zdroje a stavu. Výběr zůstává zachovaný při přepnutí na Proces i po refreshi stejného tabu; aktivní filtry lze jednotlivě odebrat nebo zrušit všechny.
 - Tmavý pracovní panel počítá naléhavost z celé aktivní fronty, ale „Otevřít první kontakt“ respektuje aktuální filtr a pořadí seznamu. Při prázdném naléhavém výběru nabídne návrat k celé frontě místo otevření kontaktu mimo výběr.
@@ -86,7 +88,7 @@ Stav kontaktů se ukládá do `localStorage` pod verzovaným klíčem `obvolavan
 
 Pokud se úložiště vůbec nepodaří přečíst, demo dál funguje v paměti, ale automatické ukládání zůstane pro tuto relaci vypnuté, aby výchozí dataset nepřepsal neznámý původní stav. Vědomě potvrzený reset smí zápis zkusit a po úspěchu persistenci znovu povolí. Pokud selže zápis po úspěšném čtení, další akce dál fungují v paměti a UI pravdivě upozorní, že změny nemusí zůstat zachované.
 
-Pracovní UI výběr má samostatný verzovaný klíč `obvolavani-portfolio-ui-v1` v `sessionStorage`. Obsahuje jen pohled, hledaný text, zdroj a procesní stav; nemění schéma kontaktů a nikdy neobnovuje otevřený dialog ani rozpracovaný formulář. Neplatné enum hodnoty, JSON nebo blokované úložiště vedou k bezpečnému výchozímu pohledu.
+Pracovní UI výběr má samostatný verzovaný klíč `obvolavani-portfolio-ui-v1` v `sessionStorage`. Obsahuje pohled a oddělené filtry fronty a Nových kontaktů; starší platný UI záznam se načte s výchozími filtry nového pohledu. Nemění schéma kontaktů a nikdy neobnovuje otevřený dialog ani rozpracovaný formulář. Neplatné enum hodnoty, JSON nebo blokované úložiště vedou k bezpečnému výchozímu pohledu. Nové syntetické položky jsou součástí výchozího datasetu, ale existující platně uložená data se nepřepisují; v takovém prohlížeči budou dostupné až po vědomém obnovení dema.
 
 ## Podklady pro screenshoty
 

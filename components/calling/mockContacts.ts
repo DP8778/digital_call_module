@@ -8,6 +8,7 @@ type Seed = Pick<
 > & {
   activity?: { type: "call" | "meeting"; day: number; hour: number };
   previousAttempt?: { daysAgo: number; label: string; note: string };
+  addedDaysAgo?: number;
 };
 
 const SEEDS: Seed[] = [
@@ -23,6 +24,11 @@ const SEEDS: Seed[] = [
   { id: "demo-10", name: "Radek Kučera", type: "prodej", subtype: "Rekreační chata", city: "Jihlava", source: "fb", status: "disqualified", previousAttempt: { daysAgo: 6, label: "Kontakt vyřazen", note: "O službu nyní nemá zájem." } },
   { id: "demo-11", name: "Alena Fialová", type: "prodej", subtype: "Byt 2+1", city: "Liberec", source: "tipar", status: "call_later", activity: { type: "call", day: -1, hour: 9 }, previousAttempt: { daysAgo: 2, label: "Nedovoláno", note: "Druhý pokus naplánován na ráno." } },
   { id: "demo-12", name: "David Soukup", type: "pronajem", subtype: "Byt 3+kk", city: "Hradec Králové", source: "callcentrum", status: "meeting", activity: { type: "meeting", day: 3, hour: 13 }, previousAttempt: { daysAgo: 1, label: "Domluvena schůzka", note: "Online konzultace." } },
+  { id: "demo-13", name: "Karolína Šimková", type: "pronajem", subtype: "Byt 2+kk", city: "Praha 7", source: "fb", status: "backlog", addedDaysAgo: 1 },
+  { id: "demo-14", name: "Ondřej Malý", type: "prodej", subtype: "Rodinný dům", city: "Brno", source: "tipar", status: "backlog", addedDaysAgo: 3 },
+  { id: "demo-15", name: "Tereza Pokorná", type: "prodej", subtype: "Byt 3+kk", city: "Plzeň", source: "inzerce", status: "backlog", addedDaysAgo: 6 },
+  { id: "demo-16", name: "Filip Němec", type: "pronajem", subtype: "Komerční prostor", city: "Praha 10", source: "callcentrum", status: "backlog", addedDaysAgo: 9 },
+  { id: "demo-17", name: "Barbora Procházková", type: "prodej", subtype: "Pozemek", city: "Olomouc", source: "fb", status: "backlog", addedDaysAgo: 12 },
 ];
 
 const SOURCE_INDEX: Record<ContactSource, number> = {
@@ -35,7 +41,7 @@ const SOURCE_INDEX: Record<ContactSource, number> = {
 export function createDemoState(now: number): DemoState {
   const today = pragueDayStart(now);
   const contacts = SEEDS.map((seed, index): Contact => {
-    const createdAt = addPragueCalendarDays(today, -(14 + index), 9 + (index % 7));
+    const createdAt = addPragueCalendarDays(today, -(seed.addedDaysAgo ?? (14 + index)), 9 + (index % 7));
     const history: TimelineEntry[] = [];
     if (seed.previousAttempt) {
       const at = addPragueCalendarDays(today, -seed.previousAttempt.daysAgo, 15);

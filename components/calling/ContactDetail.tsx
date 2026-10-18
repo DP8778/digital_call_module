@@ -10,6 +10,7 @@ import { getAttemptCount } from "./stateLogic";
 import StatusPill from "./StatusPill";
 import { formatContextualPragueDateTime, formatPragueDateTime, formatPragueDateTimePrecise } from "./time";
 import type { ActionFeedback, ColumnId, Contact } from "./types";
+import type { CallingView } from "./uiState";
 
 export default function ContactDetail({
   contact,
@@ -17,7 +18,9 @@ export default function ContactDetail({
   active,
   feedback,
   onClose,
-  onBackToQueue,
+  originView,
+  onBackToOrigin,
+  onOpenInWork,
   onDismissFeedback,
   onMove,
   onRecordOutcome,
@@ -28,7 +31,9 @@ export default function ContactDetail({
   active: boolean;
   feedback: ActionFeedback | null;
   onClose: () => void;
-  onBackToQueue: () => void;
+  originView: CallingView;
+  onBackToOrigin: () => void;
+  onOpenInWork: () => void;
   onDismissFeedback: () => void;
   onMove: (target: ColumnId) => void;
   onRecordOutcome: () => void;
@@ -48,6 +53,7 @@ export default function ContactDetail({
       : "dc-text-muted";
   const AttentionIcon = attention.kind === "overdue" ? AlertCircle : attention.kind === "ready" ? PhoneCall : CalendarClock;
   const isTerminal = contact.status === "listed" || contact.status === "disqualified";
+  const isNew = contact.status === "backlog";
   const history = [...contact.history].sort((a, b) => b.at - a.at);
   const lastInteraction = history.find((entry) => entry.type === "call_attempt") ?? history[0];
   const primaryMoveTarget: ColumnId | null = contact.status === "backlog" || contact.status === "call_later"
@@ -65,7 +71,7 @@ export default function ContactDetail({
   const primaryAction = contact.status === "to_call"
     ? { label: "Zaznamenat výsledek hovoru", icon: PhoneCall, action: onRecordOutcome }
     : contact.status === "backlog"
-      ? { label: "Začít řešit kontakt", icon: Play, action: () => onMove("to_call") }
+      ? { label: "Začít zpracovávat", icon: Play, action: () => onMove("to_call") }
       : contact.status === "call_later"
         ? { label: "Přejít k hovoru nyní", icon: PhoneCall, action: () => onMove("to_call") }
         : contact.status === "meeting"
@@ -79,13 +85,13 @@ export default function ContactDetail({
         {feedback ? (
           <section role="status" className={`${feedback.tone === "error" ? "tone-danger" : "tone-success"} mb-5 rounded-2xl border p-4`}>
             <div className="flex gap-3">{feedback.tone === "error" ? <AlertCircle className="mt-0.5 size-5 shrink-0" aria-hidden="true" /> : <CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden="true" />}<div className="min-w-0 flex-1"><h3 className="font-semibold">{feedback.title}</h3><p className="mt-1 text-sm">{feedback.description}</p><div className="mt-2"><StatusPill status={contact.status} /></div>{feedback.nextStep ? <p className="mt-2 text-sm font-semibold">Další krok: {feedback.nextStep}</p> : null}</div></div>
-            <div className="mt-4 flex flex-wrap gap-2 pl-8"><button type="button" onClick={onBackToQueue} className="button-secondary h-10 px-3"><ArrowLeft className="size-4" aria-hidden="true" />Zpět do fronty</button><button type="button" onClick={onDismissFeedback} className="button-quiet h-10 px-3">Zůstat v detailu</button></div>
+            <div className="mt-4 flex flex-wrap gap-2 pl-8"><button type="button" onClick={onBackToOrigin} className="button-secondary h-10 px-3"><ArrowLeft className="size-4" aria-hidden="true" />{originView === "new" ? "Zpět k novým kontaktům" : "Zpět do fronty"}</button>{originView === "new" && contact.status === "to_call" ? <button type="button" onClick={onOpenInWork} className="button-secondary h-10 px-3">Otevřít v K řešení</button> : null}<button type="button" onClick={onDismissFeedback} className="button-quiet h-10 px-3">Zůstat v detailu</button></div>
           </section>
         ) : null}
 
         <section aria-labelledby="attention-heading" className={`rounded-2xl border px-4 py-3.5 ${attentionTone}`}>
-          <div className="flex flex-wrap items-center gap-2"><AttentionIcon className={`size-4 ${attentionInk}`} aria-hidden="true" /><StatusPill status={contact.status} /><span className="dc-text-muted text-xs font-semibold uppercase tracking-[0.08em]">Proč teď?</span>{attention.badge ? <span className={`urgency-badge ${attentionTone}`}>{attention.badge}</span> : null}</div>
-          <h3 id="attention-heading" className="dc-text-primary mt-2 text-base font-semibold sm:text-lg">{attention.reason}</h3>
+          <div className="flex flex-wrap items-center gap-2">{!isNew ? <AttentionIcon className={`size-4 ${attentionInk}`} aria-hidden="true" /> : null}<StatusPill status={contact.status} /><span className="dc-text-muted text-xs font-semibold uppercase tracking-[0.08em]">{isNew ? "Nový kontakt" : "Proč teď?"}</span>{!isNew && attention.badge ? <span className={`urgency-badge ${attentionTone}`}>{attention.badge}</span> : null}</div>
+          <h3 id="attention-heading" className="dc-text-primary mt-2 text-base font-semibold sm:text-lg">{isNew ? "Kontakt zatím není ve zpracování." : attention.reason}</h3>
           {attention.dueAt !== null ? <p className="dc-text-muted mt-1 text-sm">{attention.activity} · <time dateTime={new Date(attention.dueAt).toISOString()}>{formatPragueDateTimePrecise(attention.dueAt)}</time></p> : null}
         </section>
 
@@ -102,11 +108,11 @@ export default function ContactDetail({
             {primaryAction && PrimaryIcon && !feedback ? (
               <section aria-labelledby="primary-action-heading">
                 <h3 id="primary-action-heading" className="dc-text-primary text-sm font-semibold">Hlavní akce</h3>
-                <button type="button" onClick={primaryAction.action} className="button-work mt-2.5 h-auto w-full justify-center px-3 py-2 sm:w-auto sm:justify-start"><span className="button-icon-slot" aria-hidden="true"><PrimaryIcon className="size-5" /></span><span>{primaryAction.label}</span></button>
+                <button type="button" onClick={primaryAction.action} className={`${isNew ? "button-primary" : "button-work"} mt-2.5 h-auto w-full justify-center px-3 py-2 sm:w-auto sm:justify-start`}><span className="button-icon-slot" aria-hidden="true"><PrimaryIcon className="size-5" /></span><span>{primaryAction.label}</span></button>
               </section>
             ) : null}
 
-            <section aria-labelledby="next-step-heading">
+            {!isNew ? <section aria-labelledby="next-step-heading">
               <div className="flex items-center justify-between gap-3"><h3 id="next-step-heading" className="dc-text-primary text-sm font-semibold">Příští krok</h3>{!isTerminal ? <button type="button" onClick={onSchedule} className="button-secondary min-h-9 px-3 py-1.5 text-xs">{contact.nextActivity ? "Upravit termín" : "Naplánovat aktivitu"}</button> : null}</div>
               {isTerminal ? (
                 <div className="tone-neutral mt-3 rounded-2xl border p-4 text-sm">Proces je uzavřený. V tomto stavu nelze plánovat novou aktivitu.</div>
@@ -117,7 +123,7 @@ export default function ContactDetail({
               ) : (
                 <div className="next-step-card tone-neutral mt-3 flex gap-3 rounded-2xl border border-dashed p-3.5 text-sm"><CalendarClock className="urgency-ready-ink mt-0.5 size-5 shrink-0" aria-hidden="true" /><div><div className="urgency-ready-ink font-semibold">Chybí další krok</div><p className="dc-text-muted mt-1">Kontakt nemá naplánovanou příští aktivitu.</p></div></div>
               )}
-            </section>
+            </section> : null}
 
             <details className="detail-card rounded-2xl border">
               <summary className="focus-ring dc-text-primary cursor-pointer rounded-2xl px-4 py-3 text-sm font-semibold">Úplné kontaktní údaje</summary>

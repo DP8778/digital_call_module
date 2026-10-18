@@ -12,7 +12,29 @@ describe("obnova UI výběru", () => {
     expect(restored).toMatchObject({
       view: "process",
       filters: { query: "Praha", source: "fb", status: "to_call" },
+      newFilters: { query: "", city: "all", type: "all", subtype: "all", source: "all", sort: "newest" },
     });
+  });
+
+  it("obnoví nový pohled a jeho filtry nezávisle na frontě", () => {
+    const restored = restoreCallingUiState(JSON.stringify({
+      schemaVersion: 1, view: "new",
+      filters: { query: "Eva", source: "inzerce", status: "meeting" },
+      newFilters: { query: "Praha", city: "Praha 7", type: "pronajem", subtype: "Byt 2+kk", source: "fb", sort: "oldest" },
+    }));
+    expect(restored.view).toBe("new");
+    expect(restored.filters.query).toBe("Eva");
+    expect(restored.newFilters).toMatchObject({ city: "Praha 7", sort: "oldest" });
+  });
+
+  it("neplatné nové filtry nahradí bezpečně bez ztráty původních filtrů", () => {
+    const restored = restoreCallingUiState(JSON.stringify({
+      schemaVersion: 1, view: "new",
+      filters: { query: "Eva", source: "all", status: "all" },
+      newFilters: { query: "", city: "all", type: "neznámý", subtype: "all", source: "all", sort: "oldest" },
+    }));
+    expect(restored.filters.query).toBe("Eva");
+    expect(restored.newFilters.type).toBe("all");
   });
 
   it("neplatnou enum hodnotu bezpečně nahradí výchozím stavem", () => {

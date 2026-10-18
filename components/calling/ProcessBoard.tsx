@@ -1,74 +1,102 @@
 "use client";
 
-import { ChevronRight, Inbox, RotateCcw } from "lucide-react";
-import ActiveFilters from "./ActiveFilters";
+import { AlertCircle, CalendarClock, ChevronDown, ChevronRight, Inbox, PhoneCall, RotateCcw } from "lucide-react";
 import { COLUMN_DESCRIPTION_CS, COLUMN_LABEL_CS } from "./allowedMoves";
-import { ACTIVITY_LABEL } from "./labels";
-import { formatAttemptCount } from "./queueLogic";
+import { formatAttemptCount, formatCzechCount } from "./queueLogic";
+import { getQueuePresentation } from "./queuePresentation";
 import { getAttemptCount } from "./stateLogic";
-import { relativeDayLabel } from "./time";
+import { formatPragueDateTimePrecise } from "./time";
 import type { ColumnId, Contact } from "./types";
 import type { QueueFilters } from "./uiState";
 
-const COLUMNS: ColumnId[] = ["backlog", "to_call", "call_later", "meeting", "listed", "disqualified"];
+const ACTIVE_COLUMNS: ColumnId[] = ["backlog", "to_call", "call_later", "meeting"];
+const CLOSED_COLUMNS: ColumnId[] = ["listed", "disqualified"];
 
-export default function ProcessBoard({ contacts, now, filters, selectedId, onFiltersChange, onOpenContact, onResetDemo }: { contacts: Contact[]; now: number; filters: QueueFilters; selectedId: string | null; onFiltersChange: (filters: QueueFilters) => void; onOpenContact: (contact: Contact) => void; onResetDemo: () => void }) {
+function ProcessContactCard({ contact, now, selected, onOpen }: { contact: Contact; now: number; selected: boolean; onOpen: () => void }) {
+  const presentation = getQueuePresentation(contact, now);
+  const urgencyInk = presentation.kind === "overdue"
+    ? "urgency-overdue-ink"
+    : presentation.kind === "ready" || presentation.kind === "missing"
+      ? "urgency-ready-ink"
+      : "dc-text-muted";
+
   return (
-    <div className="mx-auto w-full max-w-7xl overflow-hidden px-4 pb-9 pt-7 sm:px-6 sm:pt-9">
-      <div className="mb-5">
+    <button id={`process-contact-${contact.id}`} type="button" data-selected={selected} onClick={onOpen} className="process-contact contact-row focus-ring group w-full p-3.5 text-left transition-[border-color,background-color] duration-150">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0"><div className="dc-text-primary truncate font-semibold" title={contact.name}>{contact.name}</div><div className="dc-text-muted mt-1 truncate text-sm" title={`${contact.subtype} · ${contact.city}`}>{contact.subtype} · {contact.city}</div></div>
+        <span className="row-open-indicator grid size-7 shrink-0 place-items-center rounded-lg" aria-hidden="true"><ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" /></span>
+      </div>
+      <div className="mt-3 border-t pt-2.5" style={{ borderColor: "var(--dc-border)" }}>
+        <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-xs">
+          <span className="dc-text-primary font-semibold">{presentation.activity}</span>
+          {presentation.dueAt !== null ? <time dateTime={new Date(presentation.dueAt).toISOString()} className="dc-text-muted font-medium">{formatPragueDateTimePrecise(presentation.dueAt)}</time> : null}
+        </div>
+        <div className="mt-1 flex min-h-4 items-center justify-between gap-2 text-xs">
+          {presentation.badge && presentation.kind !== "today" ? <span className={`queue-urgency-label ${urgencyInk}`}>{presentation.kind === "overdue" ? <AlertCircle className="size-3.5 shrink-0" aria-hidden="true" /> : presentation.kind === "ready" ? <PhoneCall className="size-3.5 shrink-0" aria-hidden="true" /> : presentation.kind === "missing" ? <CalendarClock className="size-3.5 shrink-0" aria-hidden="true" /> : null}{presentation.badge}</span> : <span />}
+          <span className="dc-text-faint shrink-0">{formatAttemptCount(getAttemptCount(contact))}</span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+export default function ProcessBoard({ contacts, now, filters, selectedId, onOpenContact, onResetDemo }: { contacts: Contact[]; now: number; filters: QueueFilters; selectedId: string | null; onOpenContact: (contact: Contact) => void; onResetDemo: () => void }) {
+  const filtersActive = filters.query.trim() !== "" || filters.source !== "all" || filters.status !== "all";
+
+  return (
+    <div className="mx-auto w-full max-w-7xl px-4 pb-9 pt-7 sm:px-6 sm:pt-9">
+      <div className="mb-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="eyebrow">Přehled procesu</p>
-            <h1 id="process-heading" tabIndex={-1} className="dc-text-primary focus-ring mt-1 rounded-lg text-2xl font-bold tracking-[-0.035em] sm:text-[2rem]">Kanban</h1>
+            <div className="mt-1 flex flex-wrap items-baseline gap-3"><h1 id="process-heading" tabIndex={-1} className="dc-text-primary focus-ring rounded-lg text-2xl font-bold tracking-[-0.035em] sm:text-[2rem]">Kanban</h1><span className="tone-neutral rounded-full border px-2.5 py-1 text-xs font-semibold">{formatCzechCount(contacts.length, ["kontakt", "kontakty", "kontaktů"])}</span></div>
             <p className="dc-text-muted mt-1.5 text-sm leading-relaxed">Kontakty uspořádané podle aktuálního procesního stavu.</p>
           </div>
           <button type="button" onClick={onResetDemo} className="button-quiet ml-auto h-9 shrink-0 gap-1.5 px-2 text-xs"><RotateCcw className="size-3.5" aria-hidden="true" />Obnovit demo</button>
         </div>
       </div>
-      <section className="queue-control-panel mb-5 grid gap-3 p-5 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-8 sm:p-6" aria-label="Souhrn procesu">
-        <div>
-          <p className="queue-panel-eyebrow">Kontakty v procesu</p>
-          <div className="mt-1 flex items-baseline gap-2"><strong className="queue-panel-count">{contacts.length}</strong><span className="queue-panel-caption">celkem v demu</span></div>
-        </div>
-        <p className="queue-panel-muted max-w-xl text-sm leading-relaxed sm:justify-self-end">Stav kontaktu a termín další aktivity jsou oddělené. Obojí upravíte v detailu kontaktu.</p>
-      </section>
-      <ActiveFilters filters={filters} onChange={onFiltersChange} />
-      <div className="-mx-4 overflow-x-auto px-4 pb-3 sm:-mx-6 sm:px-6 md:mx-0 md:overflow-visible md:px-0">
-      <div className="grid grid-flow-col auto-cols-[minmax(286px,88vw)] items-start gap-4 md:grid-flow-row md:auto-cols-auto md:grid-cols-2 xl:grid-cols-3">
-        {COLUMNS.map((column) => {
-          const items = contacts.filter((contact) => contact.status === column);
-          return (
-            <section key={column} aria-labelledby={`column-${column}`} className="min-w-0">
-              <header className="mb-2 min-h-[58px]">
-                <div className="flex items-baseline gap-2">
-                  <h2 id={`column-${column}`} className="dc-text-primary font-semibold">{COLUMN_LABEL_CS[column]}</h2>
-                  <span className="dc-text-muted text-sm font-bold">{items.length}</span>
+
+      {filtersActive ? <p className="dc-text-muted mb-4 text-xs">Zobrazeny všechny kontakty; filtry platí pro K řešení.</p> : null}
+
+      <p id="process-scroll-hint" className="dc-text-faint mb-2 text-xs xl:hidden">Další stavy zobrazíte vodorovným posunutím →</p>
+      <div role="region" aria-label="Aktivní procesní stavy" aria-describedby="process-scroll-hint" tabIndex={0} onKeyDown={(event) => { if (event.target !== event.currentTarget || (event.key !== "ArrowRight" && event.key !== "ArrowLeft")) return; event.preventDefault(); event.currentTarget.scrollBy({ left: event.key === "ArrowRight" ? 302 : -302 }); }} className="focus-ring -mx-4 overflow-x-auto overscroll-x-contain px-4 pb-3 sm:-mx-6 sm:px-6 xl:mx-0 xl:px-0">
+        <div className="grid w-full min-w-[1192px] grid-cols-4 items-start gap-4">
+          {ACTIVE_COLUMNS.map((column) => {
+            const items = contacts.filter((contact) => contact.status === column);
+            return (
+              <section key={column} aria-labelledby={`column-${column}`} className="process-column min-w-0 p-3">
+                <header className="mb-3 px-1">
+                  <div className="flex items-center justify-between gap-2"><h2 id={`column-${column}`} className="dc-text-primary font-semibold">{COLUMN_LABEL_CS[column]}</h2><span className="tone-neutral rounded-full border px-2.5 py-1 text-xs font-semibold">{items.length}</span></div>
+                  <p className="dc-text-faint mt-1 text-xs leading-relaxed">{COLUMN_DESCRIPTION_CS[column]}</p>
+                </header>
+                <div className="space-y-2">
+                  {items.length === 0 ? <div className="dc-text-muted rounded-[var(--dc-radius)] border border-dashed border-[var(--dc-border)] bg-[var(--dc-surface)] px-3 py-8 text-center text-sm"><Inbox className="mx-auto mb-2 size-5" aria-hidden="true" />Zatím bez kontaktů</div> : items.map((contact) => <ProcessContactCard key={contact.id} contact={contact} now={now} selected={selectedId === contact.id} onOpen={() => onOpenContact(contact)} />)}
                 </div>
-                <p className="dc-text-faint mt-1 text-xs leading-relaxed">{COLUMN_DESCRIPTION_CS[column]}</p>
-              </header>
-              <div className="queue-list process-column">
-                {items.length === 0 ? (
-                  <div className="dc-text-muted px-3 py-8 text-center text-sm">
-                    <Inbox className="mx-auto mb-2 size-5" aria-hidden="true" />Zatím bez kontaktů
-                  </div>
-                ) : items.map((contact, index) => (
-                  <button id={`process-contact-${contact.id}`} key={contact.id} type="button" data-selected={selectedId === contact.id} onClick={() => onOpenContact(contact)} className={`contact-row focus-ring group w-full px-4 py-3 text-left transition-colors duration-150 hover:bg-[var(--dc-hover)] ${index > 0 ? "border-t border-[var(--dc-border)]" : ""}`}>
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0"><div className="dc-text-primary truncate font-semibold">{contact.name}</div><div className="dc-text-muted mt-1 truncate text-sm">{contact.subtype} · {contact.city}</div></div>
-                      <span className="row-open-indicator grid size-7 shrink-0 place-items-center rounded-lg" aria-hidden="true"><ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" /></span>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between gap-2 text-xs">
-                      <span className="dc-text-primary min-w-0 truncate font-medium">{contact.nextActivity ? `${ACTIVITY_LABEL[contact.nextActivity.type]} · ${relativeDayLabel(contact.nextActivity.dueAt, now)}` : "Bez dalšího termínu"}</span>
-                      <span className="dc-text-faint shrink-0">{formatAttemptCount(getAttemptCount(contact))}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </section>
-          );
-        })}
+              </section>
+            );
+          })}
+        </div>
       </div>
-      </div>
+
+      <section aria-labelledby="closed-process-heading" className="mt-7">
+        <h2 id="closed-process-heading" className="dc-text-primary mb-3 font-semibold">Uzavřené případy</h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {CLOSED_COLUMNS.map((column) => {
+            const items = contacts.filter((contact) => contact.status === column);
+            return (
+              <details key={column} className="process-closed">
+                <summary className="focus-ring flex cursor-pointer items-center justify-between gap-3 p-4">
+                  <span className="min-w-0"><span className="flex items-baseline gap-2"><span className="dc-text-primary font-semibold">{COLUMN_LABEL_CS[column]}</span><span className="dc-text-muted text-sm font-bold">{items.length}</span></span><span className="dc-text-faint mt-0.5 block text-xs leading-relaxed">{COLUMN_DESCRIPTION_CS[column]}</span></span>
+                  <span className="row-open-indicator grid size-7 shrink-0 place-items-center rounded-lg" aria-hidden="true"><ChevronDown className="process-closed-chevron size-4 transition-transform" /></span>
+                </summary>
+                <div className="grid gap-2 px-3 pb-3">
+                  {items.length === 0 ? <p className="dc-text-muted py-4 text-center text-sm">Zatím bez kontaktů</p> : items.map((contact) => <ProcessContactCard key={contact.id} contact={contact} now={now} selected={selectedId === contact.id} onOpen={() => onOpenContact(contact)} />)}
+                </div>
+              </details>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 }

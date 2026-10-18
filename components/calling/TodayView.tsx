@@ -37,6 +37,7 @@ type Props = {
   onFiltersChange: (filters: QueueFilters) => void;
   onOpenContact: (contact: Contact) => void;
   onResetDemo: () => void;
+  onGoToNew: () => void;
 };
 
 function QueueContactRow({ contact, now, selected, index, onOpen }: { contact: Contact; now: number; selected: boolean; index: number; onOpen: () => void }) {
@@ -64,7 +65,9 @@ function QueueContactRow({ contact, now, selected, index, onOpen }: { contact: C
   );
 }
 
-export default function TodayView({ contacts, now, filters, selectedId, onFiltersChange, onOpenContact, onResetDemo }: Props) {
+export default function TodayView({ contacts, now, filters, selectedId, onFiltersChange, onOpenContact, onResetDemo, onGoToNew }: Props) {
+  const backlogCount = contacts.filter((contact) => contact.status === "backlog").length;
+  const workCount = contacts.filter((contact) => contact.status === "to_call" || contact.status === "call_later" || contact.status === "meeting").length;
   const filtersActive = filters.query.trim() !== "" || filters.source !== "all" || filters.status !== "all";
 
   const filteredContacts = useMemo(() => {
@@ -136,7 +139,7 @@ export default function TodayView({ contacts, now, filters, selectedId, onFilter
           <span className="dc-text-muted mb-1.5 block text-xs font-semibold">Procesní stav</span>
           <select value={filters.status} data-selected={filters.status !== "all"} onChange={(event) => onFiltersChange({ ...filters, status: event.target.value as QueueFilters["status"] })} className="field h-11 w-full px-3 text-sm">
             <option value="all">Všechny stavy</option>
-            {(["backlog", "to_call", "call_later", "meeting"] as ColumnId[]).map((value) => <option key={value} value={value}>{COLUMN_LABEL_CS[value]}</option>)}
+            {(["to_call", "call_later", "meeting"] as ColumnId[]).map((value) => <option key={value} value={value}>{COLUMN_LABEL_CS[value]}</option>)}
           </select>
         </label>
       </div>
@@ -147,7 +150,8 @@ export default function TodayView({ contacts, now, filters, selectedId, onFilter
         <div className="content-surface border-dashed px-5 py-14 text-center">
           {filtersActive ? <Inbox className="dc-text-faint mx-auto size-8" aria-hidden="true" /> : <CircleCheck className="dc-text-primary mx-auto size-8" aria-hidden="true" />}
           <h2 className="dc-text-primary mt-3 font-semibold">{filtersActive ? "Žádná shoda s aktivním výběrem" : "Ve frontě není žádná otevřená práce"}</h2>
-          <p className="dc-text-muted mt-1 text-sm">{filtersActive ? "Zrušte některý filtr nebo se vraťte k celé frontě." : "Všechny aktivní kontakty jsou zpracované."}</p>
+          <p className="dc-text-muted mt-1 text-sm">{filtersActive ? "Zrušte některý filtr nebo se vraťte k celé frontě." : backlogCount > 0 ? `Rozpracovaných kontaktů je ${workCount}; v zásobníku čeká ${backlogCount} nových.` : "Všechny aktivní kontakty jsou zpracované."}</p>
+          {!filtersActive && backlogCount > 0 ? <button type="button" onClick={onGoToNew} className="button-secondary mt-5">Zobrazit nové kontakty</button> : null}
           {filtersActive && summary.attentionTotal === 0 ? <button type="button" onClick={clearFilters} className="button-secondary mt-5">Zobrazit celou frontu</button> : null}
         </div>
       ) : (

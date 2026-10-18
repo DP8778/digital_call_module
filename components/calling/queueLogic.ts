@@ -20,7 +20,7 @@ export function needsAttentionNow(contact: Contact, now: number): boolean {
 }
 
 export function getActiveQueueContacts(contacts: Contact[]): Contact[] {
-  return contacts.filter((contact) => contact.status !== "listed" && contact.status !== "disqualified");
+  return contacts.filter((contact) => contact.status !== "backlog" && contact.status !== "listed" && contact.status !== "disqualified");
 }
 
 export function filterQueueContacts(contacts: Contact[], filters: QueueFilters): Contact[] {
