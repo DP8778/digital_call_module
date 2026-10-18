@@ -85,7 +85,7 @@ describe("seskupení pracovní fronty", () => {
     expect(getQueuePresentation({ ...base, nextActivity: null }, NOW)).toMatchObject({ kind: "ready", badge: "Připraveno nyní", dueAt: null });
     expect(getQueuePresentation(withDueAt(todayAt), NOW)).toMatchObject({ kind: "today", badge: "Dnes", dueAt: todayAt });
     expect(getQueuePresentation(withDueAt(laterAt), NOW)).toMatchObject({ kind: "later", badge: null, dueAt: laterAt });
-    expect(getQueuePresentation({ ...base, status: "backlog", nextActivity: null }, NOW)).toMatchObject({ kind: "missing", badge: "Chybí další krok", dueAt: null });
+    expect(getQueuePresentation({ ...base, status: "backlog", nextActivity: null }, NOW)).toMatchObject({ kind: "new", badge: null, activity: "Dosud nezahájeno", dueAt: null });
     expect(getQueuePresentation({ ...base, status: "listed", nextActivity: null }, NOW)).toMatchObject({ kind: "closed", badge: null, dueAt: null });
   });
 

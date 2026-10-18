@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, CalendarClock, ChevronDown, ChevronRight, Inbox, PhoneCall, RotateCcw } from "lucide-react";
+import { AlertCircle, ArrowUpRight, CalendarClock, ChevronDown, ChevronRight, Inbox, PhoneCall, RotateCcw } from "lucide-react";
 import { COLUMN_DESCRIPTION_CS, COLUMN_LABEL_CS } from "./allowedMoves";
 import { formatAttemptCount, formatCzechCount } from "./queueLogic";
 import { getQueuePresentation } from "./queuePresentation";
@@ -21,12 +21,12 @@ function ProcessContactCard({ contact, now, selected, onOpen }: { contact: Conta
       : "dc-text-muted";
 
   return (
-    <button id={`process-contact-${contact.id}`} type="button" data-selected={selected} onClick={onOpen} className="process-contact contact-row focus-ring group w-full p-3.5 text-left transition-[border-color,background-color] duration-150">
+    <button id={`process-contact-${contact.id}`} type="button" data-selected={selected} onClick={onOpen} className="process-contact contact-row focus-ring group w-full p-3.5 text-left">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0"><div className="dc-text-primary truncate font-semibold" title={contact.name}>{contact.name}</div><div className="dc-text-muted mt-1 truncate text-sm" title={`${contact.subtype} · ${contact.city}`}>{contact.subtype} · {contact.city}</div></div>
         <span className="row-open-indicator grid size-7 shrink-0 place-items-center rounded-lg" aria-hidden="true"><ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" /></span>
       </div>
-      <div className="mt-3 border-t pt-2.5" style={{ borderColor: "var(--dc-border)" }}>
+      <div className="mt-3 pt-1">
         <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-xs">
           <span className="dc-text-primary font-semibold">{presentation.activity}</span>
           {presentation.dueAt !== null ? <time dateTime={new Date(presentation.dueAt).toISOString()} className="dc-text-muted font-medium">{formatPragueDateTimePrecise(presentation.dueAt)}</time> : null}
@@ -40,7 +40,7 @@ function ProcessContactCard({ contact, now, selected, onOpen }: { contact: Conta
   );
 }
 
-export default function ProcessBoard({ contacts, now, filters, selectedId, onOpenContact, onResetDemo }: { contacts: Contact[]; now: number; filters: QueueFilters; selectedId: string | null; onOpenContact: (contact: Contact) => void; onResetDemo: () => void }) {
+export default function ProcessBoard({ contacts, now, filters, selectedId, onOpenContact, onResetDemo, onGoToNew }: { contacts: Contact[]; now: number; filters: QueueFilters; selectedId: string | null; onOpenContact: (contact: Contact) => void; onResetDemo: () => void; onGoToNew: () => void }) {
   const filtersActive = filters.query.trim() !== "" || filters.source !== "all" || filters.status !== "all";
 
   return (
@@ -64,12 +64,13 @@ export default function ProcessBoard({ contacts, now, filters, selectedId, onOpe
           {ACTIVE_COLUMNS.map((column) => {
             const items = contacts.filter((contact) => contact.status === column);
             return (
-              <section key={column} aria-labelledby={`column-${column}`} className="process-column min-w-0 p-3">
-                <header className="mb-3 px-1">
-                  <div className="flex items-center justify-between gap-2"><h2 id={`column-${column}`} className="dc-text-primary font-semibold">{COLUMN_LABEL_CS[column]}</h2><span className="tone-neutral rounded-full border px-2.5 py-1 text-xs font-semibold">{items.length}</span></div>
-                  <p className="dc-text-faint mt-1 text-xs leading-relaxed">{COLUMN_DESCRIPTION_CS[column]}</p>
+              <section key={column} aria-labelledby={`column-${column}`} className="process-column min-w-0 overflow-hidden">
+                <header className="process-column-header carbon-surface min-h-[106px] p-3.5">
+                  <div className="flex items-center justify-between gap-2"><h2 id={`column-${column}`} className="text-sm font-bold text-white">{COLUMN_LABEL_CS[column]}</h2><span className="carbon-count rounded-lg px-2.5 py-1 text-xs font-bold text-white">{items.length}</span></div>
+                  <p className="carbon-muted mt-1.5 text-xs leading-relaxed">{COLUMN_DESCRIPTION_CS[column]}</p>
+                  {column === "backlog" ? <button type="button" onClick={onGoToNew} className="carbon-link focus-ring mt-2 inline-flex items-center gap-1 text-xs font-semibold">Prohlédnout nové <ArrowUpRight className="size-3.5" aria-hidden="true" /></button> : null}
                 </header>
-                <div className="space-y-2">
+                <div className="space-y-2 p-3">
                   {items.length === 0 ? <div className="dc-text-muted rounded-[var(--dc-radius)] border border-dashed border-[var(--dc-border)] bg-[var(--dc-surface)] px-3 py-8 text-center text-sm"><Inbox className="mx-auto mb-2 size-5" aria-hidden="true" />Zatím bez kontaktů</div> : items.map((contact) => <ProcessContactCard key={contact.id} contact={contact} now={now} selected={selectedId === contact.id} onOpen={() => onOpenContact(contact)} />)}
                 </div>
               </section>

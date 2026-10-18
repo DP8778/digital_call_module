@@ -2,7 +2,7 @@ import { ACTIVITY_LABEL } from "./labels";
 import { getQueueGroup } from "./queueLogic";
 import type { Contact } from "./types";
 
-export type QueuePresentationKind = "overdue" | "ready" | "today" | "later" | "missing" | "closed";
+export type QueuePresentationKind = "overdue" | "ready" | "today" | "later" | "missing" | "closed" | "new";
 
 export type QueuePresentation = {
   kind: QueuePresentationKind;
@@ -15,6 +15,10 @@ export type QueuePresentation = {
 export function getQueuePresentation(contact: Contact, now: number): QueuePresentation {
   if (contact.status === "listed" || contact.status === "disqualified") {
     return { kind: "closed", badge: null, activity: "Bez další aktivity", dueAt: null, reason: "Proces je uzavřený." };
+  }
+
+  if (contact.status === "backlog" && !contact.nextActivity) {
+    return { kind: "new", badge: null, activity: "Dosud nezahájeno", dueAt: null, reason: "Kontakt zatím není ve zpracování." };
   }
 
   const group = getQueueGroup(contact, now);

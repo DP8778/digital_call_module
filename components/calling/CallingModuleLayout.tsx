@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import { COLUMN_LABEL_CS } from "./allowedMoves";
 import ContactDetail from "./ContactDetail";
+import { openAcceptedContactInWork } from "./detailNavigation";
 import { ACTIVITY_LABEL } from "./labels";
 import OutcomeModal from "./OutcomeModal";
 import NewContactsView from "./NewContactsView";
@@ -119,6 +120,16 @@ export default function CallingModuleLayout() {
     setFeedback(null);
   }
 
+  function openInWork() {
+    if (!selectedContact || selectedContact.status !== "to_call") return;
+    const transition = openAcceptedContactInWork(selectedContact.id);
+    ui.setView(transition.view);
+    setDetailOrigin(transition.detailOrigin);
+    setSelectedId(transition.selectedId);
+    setFeedback(null);
+    setAnnouncement(`${selectedContact.name} je otevřený v pracovním kontextu.`);
+  }
+
   function handleOutcome(input: OutcomeInput): SubmitResult {
     if (!selectedContact) return { accepted: false, reason: "stale", message: "Kontakt už není dostupný. Otevřete jej znovu z fronty." };
     const result = board.recordOutcome(selectedContact.id, input);
@@ -186,7 +197,7 @@ export default function CallingModuleLayout() {
       ) : null}
 
       <div aria-live="polite" className="sr-only">{announcement}</div>
-      {view === "today" ? <TodayView contacts={board.state.contacts} now={now} filters={filters} selectedId={selectedId} onFiltersChange={ui.setFilters} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} onGoToNew={() => ui.setView("new")} /> : view === "new" ? <NewContactsView contacts={board.state.contacts} filters={newFilters} selectedId={selectedId} onFiltersChange={ui.setNewFilters} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} onGoToQueue={() => ui.setView("today")} justStarted={justStarted} /> : <ProcessBoard contacts={board.state.contacts} now={now} filters={filters} selectedId={selectedId} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} />}
+      {view === "today" ? <TodayView contacts={board.state.contacts} now={now} filters={filters} selectedId={selectedId} onFiltersChange={ui.setFilters} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} onGoToNew={() => ui.setView("new")} /> : view === "new" ? <NewContactsView contacts={board.state.contacts} filters={newFilters} selectedId={selectedId} onFiltersChange={ui.setNewFilters} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} onGoToQueue={() => ui.setView("today")} justStarted={justStarted} /> : <ProcessBoard contacts={board.state.contacts} now={now} filters={filters} selectedId={selectedId} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} onGoToNew={() => ui.setView("new")} />}
 
       {selectedContact ? (
         <ContactDetail
@@ -197,7 +208,7 @@ export default function CallingModuleLayout() {
           onClose={() => closeDetail()}
           originView={detailOrigin}
           onBackToOrigin={() => closeDetail(detailOrigin)}
-          onOpenInWork={() => closeDetail("today")}
+          onOpenInWork={openInWork}
           onDismissFeedback={() => setFeedback(null)}
           onMove={requestMove}
           onRecordOutcome={() => { setNow(Date.now()); setOutcomeOpen(true); }}
