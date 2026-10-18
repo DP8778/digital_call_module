@@ -50,7 +50,7 @@ function QueueContactRow({ contact, now, selected, index, onOpen }: { contact: C
 
   return (
     <button id={`queue-contact-${contact.id}`} type="button" data-selected={selected} onClick={onOpen} className={`contact-row focus-ring group grid w-full gap-2 px-4 py-3 text-left transition-colors duration-150 hover:bg-[var(--dc-hover)] sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)_180px_28px] sm:items-center sm:gap-4 ${index > 0 ? "border-t border-[var(--dc-border)]" : ""}`}>
-      <div className="min-w-0"><div className="dc-text-primary truncate font-semibold">{contact.name}</div><div className="dc-text-muted mt-0.5 truncate text-sm">{contact.subtype} · {contact.city}</div></div>
+      <div className="min-w-0"><div className="dc-text-primary dc-wrap-anywhere font-semibold">{contact.name}</div><div className="dc-text-muted dc-wrap-anywhere mt-0.5 text-sm">{contact.subtype} · {contact.city}</div></div>
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <span className={`dc-text-primary text-sm font-semibold ${presentation.kind !== "missing" ? "md:w-[72px] md:shrink-0" : ""}`}>{presentation.activity}</span>
@@ -120,22 +120,22 @@ export default function TodayView({ contacts, now, filters, selectedId, onFilter
         </div>
       </section>
 
-      <div className="filter-controls mb-5 grid gap-3 sm:grid-cols-[minmax(240px,1fr)_180px_180px]">
-        <label className="block">
+      <div className="filter-controls mb-5 grid gap-3 sm:grid-cols-2 md:grid-cols-[minmax(0,1fr)_minmax(0,180px)_minmax(0,180px)]">
+        <label className="block min-w-0 sm:col-span-2 md:col-span-1">
           <span className="dc-text-muted mb-1.5 block text-xs font-semibold">Hledat kontakt</span>
           <span className="relative block">
             <Search className="dc-text-faint pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2" aria-hidden="true" />
             <input type="search" value={filters.query} data-selected={Boolean(filters.query.trim())} onChange={(event) => onFiltersChange({ ...filters, query: event.target.value })} placeholder="Jméno, město, nemovitost…" className="field h-11 w-full pl-9 pr-3 text-sm" />
           </span>
         </label>
-        <label>
+        <label className="min-w-0">
           <span className="dc-text-muted mb-1.5 block text-xs font-semibold">Zdroj</span>
           <select value={filters.source} data-selected={filters.source !== "all"} onChange={(event) => onFiltersChange({ ...filters, source: event.target.value as QueueFilters["source"] })} className="field h-11 w-full px-3 text-sm">
             <option value="all">Všechny zdroje</option>
             {Object.entries(SOURCE_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
         </label>
-        <label>
+        <label className="min-w-0">
           <span className="dc-text-muted mb-1.5 block text-xs font-semibold">Procesní stav</span>
           <select value={filters.status} data-selected={filters.status !== "all"} onChange={(event) => onFiltersChange({ ...filters, status: event.target.value as QueueFilters["status"] })} className="field h-11 w-full px-3 text-sm">
             <option value="all">Všechny stavy</option>

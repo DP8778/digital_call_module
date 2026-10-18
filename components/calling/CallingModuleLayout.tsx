@@ -60,6 +60,7 @@ export default function CallingModuleLayout() {
       }
       const target = contactTarget ?? document.getElementById(fallbackId);
       target?.focus();
+      if (view === "process" && contactTarget) contactTarget.scrollIntoView({ block: "nearest", inline: "nearest" });
       setFocusRequest(null);
     });
     return () => window.cancelAnimationFrame(frame);

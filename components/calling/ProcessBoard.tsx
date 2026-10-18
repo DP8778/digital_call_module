@@ -23,7 +23,7 @@ function ProcessContactCard({ contact, now, selected, onOpen }: { contact: Conta
   return (
     <button id={`process-contact-${contact.id}`} type="button" data-selected={selected} onClick={onOpen} className="process-contact contact-row focus-ring group w-full p-3.5 text-left">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0"><div className="dc-text-primary truncate font-semibold" title={contact.name}>{contact.name}</div><div className="dc-text-muted mt-1 truncate text-sm" title={`${contact.subtype} · ${contact.city}`}>{contact.subtype} · {contact.city}</div></div>
+        <div className="min-w-0"><div className="dc-text-primary dc-wrap-anywhere font-semibold">{contact.name}</div><div className="dc-text-muted dc-wrap-anywhere mt-1 text-sm">{contact.subtype} · {contact.city}</div></div>
         <span className="row-open-indicator grid size-7 shrink-0 place-items-center rounded-lg" aria-hidden="true"><ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" /></span>
       </div>
       <div className="mt-3 pt-1">

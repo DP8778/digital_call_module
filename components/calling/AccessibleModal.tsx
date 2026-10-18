@@ -106,11 +106,11 @@ export default function AccessibleModal({
       >
         <header className="modal-header sticky top-0 z-10 flex items-start justify-between gap-4 border-b px-5 py-4 sm:px-6">
           <div>
-            <h2 id={titleId} className="dc-text-primary text-lg font-bold tracking-[-0.025em]">
+            <h2 id={titleId} className="dc-text-primary dc-wrap-anywhere text-lg font-bold tracking-[-0.025em]">
               {title}
             </h2>
             {description ? (
-              <p id={descriptionId} className="dc-text-muted mt-1 text-sm">
+              <p id={descriptionId} className="dc-text-muted dc-wrap-anywhere mt-1 text-sm">
                 {description}
               </p>
             ) : null}

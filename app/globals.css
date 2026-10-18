@@ -236,6 +236,7 @@
   .dc-text-primary { color: var(--dc-text); }
   .dc-text-muted { color: var(--dc-text-muted); }
   .dc-text-faint { color: var(--dc-text-faint); }
+  .dc-wrap-anywhere { overflow-wrap: anywhere; }
   .brand-mark {
     color: var(--dc-brand-text);
     background: var(--dc-brand-background);
@@ -367,7 +368,7 @@
   .choice-card[data-tone="danger"]:focus-within { outline-color: var(--dc-danger); }
   .choice-radio { accent-color: var(--dc-focus); }
   .choice-radio-danger { accent-color: var(--dc-danger); }
-  .active-filter { color: var(--dc-text); background: var(--dc-surface-subtle); border-color: var(--dc-border-strong); }
+  .active-filter { max-width: 100%; min-width: 0; overflow-wrap: anywhere; color: var(--dc-text); background: var(--dc-surface-subtle); border-color: var(--dc-border-strong); text-align: left; }
   .filter-controls { padding: 1rem; background: var(--dc-filter-band); border-radius: var(--dc-radius-xl); }
   .queue-control-panel, .carbon-surface {
     color: #ffffff;
@@ -413,7 +414,7 @@
   .new-results-bar { background: var(--dc-surface-subtle); }
   .new-list-heading { color: var(--dc-text-muted); }
   .new-contact-list { display: grid; gap: 0.625rem; }
-  .new-contact-row { background: var(--dc-surface); border: 1px solid var(--dc-border); box-shadow: 0 1px 0 var(--dc-glass-highlight) inset, 0 2px 6px rgba(0, 0, 0, 0.055); transition: border-color 150ms ease, box-shadow 150ms ease, transform 120ms ease; }
+  .new-contact-row { overflow-wrap: anywhere; background: var(--dc-surface); border: 1px solid var(--dc-border); box-shadow: 0 1px 0 var(--dc-glass-highlight) inset, 0 2px 6px rgba(0, 0, 0, 0.055); transition: border-color 150ms ease, box-shadow 150ms ease, transform 120ms ease; }
   .new-contact-row:hover { border-color: var(--dc-border-strong); box-shadow: 0 1px 0 var(--dc-glass-highlight) inset, 0 5px 12px rgba(0, 0, 0, 0.11); }
   .new-contact-row:focus-visible { outline: 2px solid var(--dc-focus); outline-offset: 2px; }
   .new-contact-row:active { transform: scale(0.995); }
@@ -453,6 +454,7 @@
   }
   .modal-overlay { background: var(--dc-overlay); }
   .modal-panel {
+    overflow-wrap: anywhere;
     background: var(--dc-control-solid);
     background-image: var(--dc-glass-sheen);
     border-color: var(--dc-glass-edge);
