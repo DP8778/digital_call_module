@@ -400,6 +400,25 @@
   .process-contact:focus-visible { outline: 2px solid var(--dc-focus); outline-offset: 2px; }
   .process-contact:active { transform: scale(0.992); }
   .process-contact[data-selected="true"] { background: var(--dc-selected); border-color: var(--dc-selection-edge); box-shadow: 0 0 0 1px var(--dc-selection-edge), var(--dc-process-card-shadow); }
+  .process-contact-open { border-radius: inherit; }
+  .process-contact-open:focus-visible { outline: 2px solid var(--dc-focus); outline-offset: -3px; }
+  .process-contact-actions { border-color: var(--dc-border); }
+  .process-drag-handle, .process-move-menu-button { color: var(--dc-text-muted); background: transparent; }
+  .process-drag-handle:hover, .process-move-menu-button:hover { color: var(--dc-text); background: var(--dc-hover); }
+  .process-drag-handle { touch-action: manipulation; }
+  .process-move-menu { color: var(--dc-text); background: var(--dc-surface-elevated); border-color: var(--dc-border-strong); }
+  .process-contact[data-dragging="true"] { opacity: 0.34; border-style: dashed; border-color: var(--dc-border-strong); box-shadow: none; }
+  .process-contact[data-dragging="true"] > * { visibility: hidden; }
+  .process-drag-overlay { transform: rotate(0.6deg) translateY(-4px); border-color: var(--dc-accent); box-shadow: 0 3px 7px rgba(0, 0, 0, 0.2), 0 18px 34px rgba(0, 0, 0, 0.24); }
+  .process-drop-zone { transition: opacity 150ms ease, outline-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease; }
+  .process-drop-zone[data-drop-state="allowed"] { outline: 2px dashed var(--dc-accent); outline-offset: 2px; }
+  .process-drop-zone[data-drop-state="focused-valid"] { background: color-mix(in oklab, var(--dc-accent) 13%, var(--dc-surface-subtle)); outline: 4px solid var(--dc-accent); outline-offset: 2px; box-shadow: 0 0 0 1px #829516 inset, 0 10px 24px rgba(48, 58, 3, 0.14); }
+  .process-drop-zone[data-drop-state="focused-invalid"] { opacity: 0.72; outline: 2px dashed var(--dc-danger); outline-offset: 2px; }
+  .process-drop-zone[data-drop-state="dimmed"] { opacity: 0.52; filter: saturate(0.72); }
+  .process-drop-label { display: inline-flex; width: fit-content; max-width: 100%; align-items: center; border-radius: 999px; padding: 0.3rem 0.55rem; color: #17190c; background: var(--dc-accent); border: 1px solid #9bad25; font-size: 0.7rem; font-weight: 800; line-height: 1.2; }
+  .process-drop-zone[data-drop-state="focused-invalid"] .process-drop-label { color: var(--dc-danger); background: var(--dc-danger-bg); border-color: var(--dc-danger-border); }
+  .process-compact-drop { background: var(--dc-surface-subtle); border-color: var(--dc-border); }
+  .process-closed[data-drag-muted="true"] { opacity: 0.52; }
   .process-closed { background: var(--dc-surface-subtle); }
   .process-closed .process-contact { box-shadow: none; }
   .new-filter-panel { border-radius: 19px; }
@@ -503,7 +522,7 @@
 }
 
 @media (forced-colors: active) {
-  .app-header, .content-surface, .queue-control-panel, .carbon-surface, .queue-list, .process-column, .process-closed, .process-contact, .new-contact-row, .elevated-surface, .choice-card, .field, .modal-panel, .modal-content, .button-work, .button-primary, .button-secondary, .button-danger { border: 1px solid CanvasText; box-shadow: none; }
+  .app-header, .content-surface, .queue-control-panel, .carbon-surface, .queue-list, .process-column, .process-closed, .process-contact, .process-compact-drop, .new-contact-row, .elevated-surface, .choice-card, .field, .modal-panel, .modal-content, .button-work, .button-primary, .button-secondary, .button-danger { border: 1px solid CanvasText; box-shadow: none; }
   .queue-control-panel, .carbon-surface { color: CanvasText; background: Canvas; }
   .carbon-muted, .carbon-link, .process-column-header h2, .carbon-count { color: CanvasText; }
   .nav-link[data-active="true"] { border-color: Highlight; }
@@ -513,6 +532,8 @@
   .urgency-overdue, .urgency-ready { color: CanvasText; background: Canvas; border-color: CanvasText; }
   .urgency-overdue-ink, .urgency-ready-ink { color: CanvasText; }
   .queue-list-overdue { border-top-color: CanvasText; }
+  .process-drop-zone[data-drop-state="allowed"], .process-drop-zone[data-drop-state="focused-valid"] { outline-color: Highlight; }
+  .process-drop-label { color: HighlightText; background: Highlight; border-color: Highlight; }
 }
 
 @media (max-width: 360px) {

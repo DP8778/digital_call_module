@@ -4,6 +4,7 @@ import {
   applyBoardOperation,
   applyTimeRules,
   CALL_READY_GRACE_MS,
+  createContactMoveDraft,
   getAttemptCount,
   getRecommendedFollowUpAt,
   moveContact,
@@ -22,6 +23,116 @@ function contact(state: ReturnType<typeof createDemoState>, id: string) {
 }
 
 describe("stavová logika dema", () => {
+  it("vytvoří návrh jen pro povolený jiný cílový stav", () => {
+    const initial = createDemoState(NOW);
+    const original = contact(initial, "demo-4");
+
+    expect(createContactMoveDraft(original, "call_later")).toMatchObject({ source: "to_call", target: "call_later" });
+    expect(createContactMoveDraft(original, "to_call")).toBeNull();
+    expect(createContactMoveDraft(original, "listed")).toBeNull();
+    expect(createContactMoveDraft(original, null)).toBeNull();
+  });
+
+  it("samotný návrh ani jeho zrušení nemění data a počty", () => {
+    const initial = createDemoState(NOW);
+    const serialized = JSON.stringify(initial);
+    const draft = createContactMoveDraft(contact(initial, "demo-4"), "call_later");
+
+    expect(draft).not.toBeNull();
+    expect(JSON.stringify(initial)).toBe(serialized);
+    expect(initial.contacts).toHaveLength(JSON.parse(serialized).contacts.length);
+  });
+
+  it("atomicky potvrdí stav a povinnou aktivitu bez vytvoření pokusu", () => {
+    const initial = createDemoState(NOW);
+    const original = contact(initial, "demo-4");
+    const attempts = getAttemptCount(original);
+    const draft = createContactMoveDraft(original, "call_later")!;
+    const dueAt = NOW + 2 * 60 * 60_000;
+    const result = applyBoardOperation(initial, { kind: "confirm_move", draft, activity: { activityType: "call", dueAt } }, NOW + 1_000);
+
+    expect(result.accepted).toBe(true);
+    if (!result.accepted) return;
+    expect(result.contact).toMatchObject({ status: "call_later", nextActivity: { type: "call", dueAt } });
+    expect(getAttemptCount(result.contact)).toBe(attempts);
+    expect(result.state.contacts).toHaveLength(initial.contacts.length);
+    expect(result.contact.history.filter((entry) => entry.at === NOW + 1_000).map((entry) => entry.type)).toEqual(["status_change", "activity_cancelled", "activity_scheduled"]);
+  });
+
+  it("odmítne neplatný nebo mezitím prošlý termín beze změny stavu i aktivity", () => {
+    const initial = createDemoState(NOW);
+    const original = contact(initial, "demo-4");
+    const draft = createContactMoveDraft(original, "meeting")!;
+    const dueAt = NOW + 1_000;
+    const result = applyBoardOperation(initial, { kind: "confirm_move", draft, activity: { activityType: "meeting", dueAt } }, dueAt);
+
+    expect(result).toMatchObject({ accepted: false, reason: "expired", state: initial });
+    expect(contact(initial, original.id)).toBe(original);
+  });
+
+  it("odmítne zastaralý návrh po změně aktivity", () => {
+    const initial = createDemoState(NOW);
+    const original = contact(initial, "demo-4");
+    const draft = createContactMoveDraft(original, "meeting")!;
+    const changed = {
+      ...initial,
+      contacts: initial.contacts.map((item) => item.id === original.id ? { ...item, nextActivity: { id: "new", type: "call" as const, dueAt: NOW + 60_000 } } : item),
+    };
+    const result = applyBoardOperation(changed, { kind: "confirm_move", draft, activity: { activityType: "meeting", dueAt: NOW + 120_000 } }, NOW + 1_000);
+
+    expect(result).toMatchObject({ accepted: false, reason: "stale", state: changed });
+    expect(contact(changed, original.id).status).toBe("to_call");
+  });
+
+  it("odmítne návrh zastaralý automatickým časovým přechodem", () => {
+    const initial = createDemoState(NOW);
+    const original = contact(initial, "demo-11");
+    const draft = createContactMoveDraft(original, "meeting")!;
+    const afterTimeRule = applyTimeRules(initial, NOW);
+    const result = applyBoardOperation(afterTimeRule, { kind: "confirm_move", draft, activity: { activityType: "meeting", dueAt: NOW + 120_000 } }, NOW);
+
+    expect(contact(afterTimeRule, original.id).status).toBe("to_call");
+    expect(result).toMatchObject({ accepted: false, reason: "stale", state: afterTimeRule });
+  });
+
+  it("opakované potvrzení téhož návrhu provede právě jeden přesun", () => {
+    const initial = createDemoState(NOW);
+    const draft = createContactMoveDraft(contact(initial, "demo-7"), "to_call")!;
+    const first = applyBoardOperation(initial, { kind: "confirm_move", draft }, NOW + 1_000);
+
+    expect(first.accepted).toBe(true);
+    if (!first.accepted) return;
+    const duplicate = applyBoardOperation(first.state, { kind: "confirm_move", draft }, NOW + 2_000);
+    expect(duplicate).toMatchObject({ accepted: false, reason: "stale", state: first.state });
+    expect(first.contact.history.filter((entry) => entry.type === "status_change" && entry.label.includes("K provolání"))).toHaveLength(1);
+  });
+
+  it("při přesunu k provolání zachová skutečnou aktivitu", () => {
+    const initial = createDemoState(NOW);
+    const original = contact(initial, "demo-6");
+    const draft = createContactMoveDraft(original, "to_call")!;
+    const result = applyBoardOperation(initial, { kind: "confirm_move", draft }, NOW + 1_000);
+
+    expect(result.accepted).toBe(true);
+    if (!result.accepted) return;
+    expect(result.contact.nextActivity).toEqual(original.nextActivity);
+    expect(result.contact.history.some((entry) => entry.at === NOW + 1_000 && entry.type === "activity_cancelled")).toBe(false);
+  });
+
+  it("při uzavření atomicky zruší aktivitu a zapíše přesný termín", () => {
+    const initial = createDemoState(NOW);
+    const original = contact(initial, "demo-3");
+    const draft = createContactMoveDraft(original, "listed")!;
+    const result = applyBoardOperation(initial, { kind: "confirm_move", draft }, NOW + 1_000);
+
+    expect(result.accepted).toBe(true);
+    if (!result.accepted) return;
+    expect(result.contact).toMatchObject({ status: "listed", nextActivity: null });
+    const cancelled = result.contact.history.find((entry) => entry.at === NOW + 1_000 && entry.type === "activity_cancelled");
+    expect(cancelled?.note).toContain("Schůzka");
+    expect(cancelled?.note).toContain("2026");
+  });
+
   it("přesun kontaktu nevytváří pokus", () => {
     const initial = createDemoState(NOW);
     const before = getAttemptCount(contact(initial, "demo-7"));

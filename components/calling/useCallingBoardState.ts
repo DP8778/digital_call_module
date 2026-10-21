@@ -11,10 +11,12 @@ import {
 import {
   applyBoardOperation,
   applyTimeRules,
+  createContactMoveDraft,
   type BoardOperation,
   type BoardOperationResult,
 } from "./stateLogic";
 import type { ColumnId, DemoState, OutcomeInput, ScheduleInput } from "./types";
+import type { ContactMoveDraft } from "./types";
 
 function getLocalStorage(): Storage | null {
   try {
@@ -68,7 +70,14 @@ export function useCallingBoardState() {
   }, []);
 
   const commit = useCallback((operation: BoardOperation): BoardOperationResult => {
-    const result = applyBoardOperation(stateRef.current, operation, Date.now());
+    const now = Date.now();
+    const current = stateRef.current;
+    const currentWithTimeRules = current ? applyTimeRules(current, now) : null;
+    if (currentWithTimeRules !== current) {
+      stateRef.current = currentWithTimeRules;
+      setState(currentWithTimeRules);
+    }
+    const result = applyBoardOperation(currentWithTimeRules, operation, now);
     if (result.accepted) {
       stateRef.current = result.state;
       setState(result.state);
@@ -84,6 +93,21 @@ export function useCallingBoardState() {
 
   const scheduleActivity = useCallback((contactId: string, input: ScheduleInput) =>
     commit({ kind: "schedule", contactId, input }), [commit]);
+
+  const confirmMove = useCallback((draft: ContactMoveDraft, activity?: ScheduleInput) =>
+    commit({ kind: "confirm_move", draft, activity }), [commit]);
+
+  const getMoveDraft = useCallback((contactId: string, target: ColumnId): ContactMoveDraft | null => {
+    const current = stateRef.current;
+    if (!current) return null;
+    const currentWithTimeRules = applyTimeRules(current, Date.now());
+    if (currentWithTimeRules !== current) {
+      stateRef.current = currentWithTimeRules;
+      setState(currentWithTimeRules);
+    }
+    const contact = currentWithTimeRules.contacts.find((item) => item.id === contactId);
+    return contact ? createContactMoveDraft(contact, target) : null;
+  }, []);
 
   const resetDemo = useCallback(() => {
     const reset = resetDemoState(getLocalStorage(), Date.now());
@@ -115,6 +139,8 @@ export function useCallingBoardState() {
     moveContact,
     recordOutcome,
     scheduleActivity,
+    confirmMove,
+    getMoveDraft,
     resetDemo,
   };
 }

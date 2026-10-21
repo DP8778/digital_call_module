@@ -68,6 +68,15 @@ export type ScheduleInput = {
   dueAt: number;
 };
 
+export type ContactMoveDraft = {
+  contactId: string;
+  contactName: string;
+  source: ColumnId;
+  target: ColumnId;
+  expectedStatusUpdatedAt: number;
+  expectedNextActivity: NextActivity | null;
+};
+
 export type ActionFeedback = {
   title: string;
   description: string;

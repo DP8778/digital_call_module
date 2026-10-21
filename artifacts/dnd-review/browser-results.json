@@ -1,0 +1,167 @@
+[
+  {
+    "name": "mouse drag starts after movement",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "all allowed active targets are labelled",
+    "passed": true,
+    "detail": "labels=4"
+  },
+  {
+    "name": "closed target appears while dragging",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "focused valid target has explicit text",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "valid drop opens one dialog",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "drop has not moved before confirmation",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "cancel leaves source unchanged",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "invalid drop opens no dialog",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "invalid drop leaves contact in source",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "outside drop opens no dialog",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "keyboard drag opens proposal",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "cancel restores focus to handle",
+    "passed": true,
+    "detail": "focus=process-drag-handle-demo-7"
+  },
+  {
+    "name": "vertical edge autoscroll moves page",
+    "passed": true,
+    "detail": "scrollY=1105"
+  },
+  {
+    "name": "collapsed closed target accepts drop",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "non-drag move action opens same proposal",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "confirmed move changes target",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "confirmed move survives refresh",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "dark theme renders focused target",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "no browser console errors",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "touch drag opens proposal",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "horizontal edge autoscroll moves board",
+    "passed": true,
+    "detail": "scrollLeft=849"
+  },
+  {
+    "name": "mobile target remains detectable after scroll",
+    "passed": true,
+    "detail": "state=focused-valid"
+  },
+  {
+    "name": "mobile drop dialog fits viewport",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "layout has no page overflow at 320x700",
+    "passed": true,
+    "detail": "scrollWidth=320"
+  },
+  {
+    "name": "layout has no page overflow at 430x800",
+    "passed": true,
+    "detail": "scrollWidth=430"
+  },
+  {
+    "name": "layout has no page overflow at 640x900",
+    "passed": true,
+    "detail": "scrollWidth=640"
+  },
+  {
+    "name": "layout has no page overflow at 1024x768",
+    "passed": true,
+    "detail": "scrollWidth=1024"
+  },
+  {
+    "name": "layout has no page overflow at 1280x800",
+    "passed": true,
+    "detail": "scrollWidth=1280"
+  },
+  {
+    "name": "layout has no page overflow at 1920x1080",
+    "passed": true,
+    "detail": "scrollWidth=1920"
+  },
+  {
+    "name": "layout has no page overflow at 812x375",
+    "passed": true,
+    "detail": "scrollWidth=812"
+  },
+  {
+    "name": "reduced motion removes visible transition",
+    "passed": true,
+    "detail": "1e-05s"
+  },
+  {
+    "name": "valid drag opens fitting dialog at 812x375",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "name": "cancel restores handle focus at 812x375",
+    "passed": true,
+    "detail": "focus=process-drag-handle-demo-7"
+  }
+]

@@ -5,6 +5,7 @@ import { createDemoState } from "./mockContacts";
 import { formatPragueDateTimePrecise } from "./time";
 import type {
   Contact,
+  ContactMoveDraft,
   ContactSource,
   DemoState,
   OutcomeInput,
@@ -92,6 +93,111 @@ export function moveContact(
       statusUpdatedAt: now,
       nextActivity: clearsActivity ? null : contact.nextActivity,
       history: [event, ...(cancelledActivity ? [cancelledActivity] : []), ...contact.history],
+    },
+    now,
+  );
+}
+
+function sameActivity(left: Contact["nextActivity"], right: Contact["nextActivity"]): boolean {
+  if (left === null || right === null) return left === right;
+  return left.id === right.id && left.type === right.type && left.dueAt === right.dueAt;
+}
+
+export function createContactMoveDraft(contact: Contact, target: Contact["status"] | null): ContactMoveDraft | null {
+  if (!target || !isMoveAllowed(contact.status, target)) return null;
+  return {
+    contactId: contact.id,
+    contactName: contact.name,
+    source: contact.status,
+    target,
+    expectedStatusUpdatedAt: contact.statusUpdatedAt,
+    expectedNextActivity: contact.nextActivity ? { ...contact.nextActivity } : null,
+  };
+}
+
+export function confirmContactMove(
+  state: DemoState,
+  draft: ContactMoveDraft,
+  activity: ScheduleInput | undefined,
+  now: number,
+): DemoState {
+  const contact = state.contacts.find((item) => item.id === draft.contactId);
+  if (
+    !contact ||
+    contact.status !== draft.source ||
+    contact.statusUpdatedAt !== draft.expectedStatusUpdatedAt ||
+    !sameActivity(contact.nextActivity, draft.expectedNextActivity) ||
+    !isMoveAllowed(contact.status, draft.target)
+  ) return state;
+
+  const requiredActivity = draft.target === "call_later"
+    ? "call"
+    : draft.target === "meeting"
+      ? "meeting"
+      : null;
+  if (
+    requiredActivity &&
+    (!activity || activity.activityType !== requiredActivity || !Number.isFinite(activity.dueAt) || activity.dueAt <= now)
+  ) return state;
+  if (!requiredActivity && activity) return state;
+
+  const clearsActivity = draft.target === "backlog" || draft.target === "listed" || draft.target === "disqualified";
+  const reusesCurrentActivity = Boolean(
+    requiredActivity &&
+    activity &&
+    contact.nextActivity?.type === activity.activityType &&
+    contact.nextActivity.dueAt === activity.dueAt,
+  );
+  const scheduledActivity = requiredActivity && activity
+    ? reusesCurrentActivity
+      ? contact.nextActivity
+      : {
+          id: eventId(contact.id, activity.dueAt, activity.activityType),
+          type: activity.activityType,
+          dueAt: activity.dueAt,
+        }
+    : null;
+  const nextActivity = clearsActivity
+    ? null
+    : scheduledActivity ?? contact.nextActivity;
+  const activityChanged = !sameActivity(contact.nextActivity, nextActivity);
+  const statusEvent: TimelineEntry = {
+    id: eventId(contact.id, now, `status-${draft.target}`),
+    at: now,
+    type: "status_change",
+    label: `Stav změněn: ${COLUMN_LABEL_CS[draft.target]}`,
+  };
+  const cancelledActivity: TimelineEntry | null = activityChanged && contact.nextActivity
+    ? {
+        id: eventId(contact.id, now, "activity-cancelled"),
+        at: now,
+        type: "activity_cancelled",
+        label: scheduledActivity
+          ? "Předchozí aktivita nahrazena při změně stavu"
+          : "Příští aktivita zrušena při změně stavu",
+        note: `${ACTIVITY_LABEL[contact.nextActivity.type]} · ${formatPragueDateTimePrecise(contact.nextActivity.dueAt)}`,
+      }
+    : null;
+  const scheduledEvent: TimelineEntry | null = activityChanged && scheduledActivity
+    ? {
+        id: eventId(contact.id, now, "schedule"),
+        at: now,
+        type: "activity_scheduled",
+        label: contact.nextActivity
+          ? `Naplánována náhradní aktivita: ${ACTIVITY_LABEL[scheduledActivity.type].toLocaleLowerCase("cs-CZ")}`
+          : `Naplánována další aktivita: ${ACTIVITY_LABEL[scheduledActivity.type].toLocaleLowerCase("cs-CZ")}`,
+        note: formatPragueDateTimePrecise(scheduledActivity.dueAt),
+      }
+    : null;
+
+  return replaceContact(
+    state,
+    {
+      ...contact,
+      status: draft.target,
+      statusUpdatedAt: now,
+      nextActivity,
+      history: [statusEvent, ...(cancelledActivity ? [cancelledActivity] : []), ...(scheduledEvent ? [scheduledEvent] : []), ...contact.history],
     },
     now,
   );
@@ -206,6 +312,7 @@ export function recordCallOutcome(
 
 export type BoardOperation =
   | { kind: "move"; contactId: string; target: Contact["status"] }
+  | { kind: "confirm_move"; draft: ContactMoveDraft; activity?: ScheduleInput }
   | { kind: "schedule"; contactId: string; input: ScheduleInput }
   | { kind: "outcome"; contactId: string; input: OutcomeInput };
 
@@ -221,14 +328,23 @@ export function applyBoardOperation(
   if (!state) return { accepted: false, state, reason: "unavailable" };
   const next = operation.kind === "move"
     ? moveContact(state, operation.contactId, operation.target, now)
+    : operation.kind === "confirm_move"
+      ? confirmContactMove(state, operation.draft, operation.activity, now)
     : operation.kind === "schedule"
       ? scheduleActivity(state, operation.contactId, operation.input, now)
       : recordCallOutcome(state, operation.contactId, operation.input, now);
   if (next === state) {
-    const dueAt = operation.kind === "schedule" ? operation.input.dueAt : operation.kind === "outcome" ? operation.input.scheduledAt : undefined;
-    return { accepted: false, state, reason: dueAt !== undefined && dueAt <= now ? "expired" : "stale" };
+    const dueAt = operation.kind === "schedule"
+      ? operation.input.dueAt
+      : operation.kind === "outcome"
+        ? operation.input.scheduledAt
+        : operation.kind === "confirm_move"
+          ? operation.activity?.dueAt
+          : undefined;
+    return { accepted: false, state, reason: dueAt !== undefined && (!Number.isFinite(dueAt) || dueAt <= now) ? "expired" : "stale" };
   }
-  const contact = next.contacts.find((item) => item.id === operation.contactId);
+  const contactId = operation.kind === "confirm_move" ? operation.draft.contactId : operation.contactId;
+  const contact = next.contacts.find((item) => item.id === contactId);
   if (!contact) return { accepted: false, state, reason: "stale" };
   return { accepted: true, state: next, contact, at: now };
 }

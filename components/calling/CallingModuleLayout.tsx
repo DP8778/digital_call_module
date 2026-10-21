@@ -9,13 +9,14 @@ import { openAcceptedContactInWork } from "./detailNavigation";
 import { ACTIVITY_LABEL } from "./labels";
 import OutcomeModal from "./OutcomeModal";
 import NewContactsView from "./NewContactsView";
+import MoveConfirmationModal from "./MoveConfirmationModal";
 import ProcessBoard from "./ProcessBoard";
 import ResetDemoModal from "./ResetDemoModal";
 import ScheduleModal from "./ScheduleModal";
 import StatusChangeModal from "./StatusChangeModal";
 import TodayView from "./TodayView";
 import { formatPragueDateTimePrecise } from "./time";
-import type { ActionFeedback, ColumnId, Contact, OutcomeInput, ScheduleInput, SubmitResult } from "./types";
+import type { ActionFeedback, ColumnId, Contact, ContactMoveDraft, OutcomeInput, ScheduleInput, SubmitResult } from "./types";
 import { useCallingUiState, type CallingView } from "./uiState";
 import { useCallingBoardState } from "./useCallingBoardState";
 
@@ -34,7 +35,9 @@ export default function CallingModuleLayout() {
   const [outcomeOpen, setOutcomeOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [pendingMove, setPendingMove] = useState<ColumnId | null>(null);
+  const [pendingBoardMove, setPendingBoardMove] = useState<{ draft: ContactMoveDraft; focusId: string } | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
+  const [boardNotice, setBoardNotice] = useState("");
   const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [announcement, setAnnouncement] = useState("");
@@ -42,6 +45,7 @@ export default function CallingModuleLayout() {
   const [detailOrigin, setDetailOrigin] = useState<CallingView>("today");
   const [justStarted, setJustStarted] = useState(false);
   const startedContactRef = useRef<string | null>(null);
+  const boardMoveAcceptedRef = useRef(false);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 60_000);
@@ -162,12 +166,58 @@ export default function CallingModuleLayout() {
     return { accepted: true };
   }
 
+  function requestBoardMove(draft: ContactMoveDraft, focusId: string) {
+    boardMoveAcceptedRef.current = false;
+    setNow(Date.now());
+    setPendingBoardMove({ draft, focusId });
+    setBoardNotice("");
+    setAnnouncement(`Otevřen návrh přesunu kontaktu ${draft.contactName} z ${COLUMN_LABEL_CS[draft.source]} do ${COLUMN_LABEL_CS[draft.target]}.`);
+  }
+
+  function closeBoardMove() {
+    const pending = pendingBoardMove;
+    const accepted = boardMoveAcceptedRef.current;
+    boardMoveAcceptedRef.current = false;
+    setPendingBoardMove(null);
+    if (!accepted && pending) {
+      window.requestAnimationFrame(() => document.getElementById(pending.focusId)?.focus());
+    }
+  }
+
+  function confirmBoardMove(draft: ContactMoveDraft, activity?: ScheduleInput): SubmitResult {
+    const result = board.confirmMove(draft, activity);
+    if (!result.accepted) {
+      const message = rejectionMessage(result.reason);
+      setAnnouncement(message);
+      return { accepted: false, reason: result.reason, message };
+    }
+    const actual = result.contact;
+    const activityEvent = actual.history.find((entry) => entry.at === result.at && (entry.type === "activity_scheduled" || entry.type === "activity_cancelled"));
+    const description = `Kontakt ${actual.name} byl přesunut do stavu „${COLUMN_LABEL_CS[actual.status]}“.${activityEvent ? ` ${activityEvent.label}.` : ""}`;
+    boardMoveAcceptedRef.current = true;
+    setBoardNotice(description);
+    setAnnouncement(description);
+    setFocusRequest({ contactId: actual.id, view: "process" });
+    return { accepted: true };
+  }
+
+  function refreshBoardMoveDraft(): boolean {
+    if (!pendingBoardMove) return false;
+    const refreshed = board.getMoveDraft(pendingBoardMove.draft.contactId, pendingBoardMove.draft.target);
+    if (!refreshed) return false;
+    setPendingBoardMove({ ...pendingBoardMove, draft: refreshed });
+    setNow(Date.now());
+    setAnnouncement(`Návrh přesunu kontaktu ${refreshed.contactName} byl aktualizován podle současných dat.`);
+    return true;
+  }
+
   function resetDemo() {
     board.resetDemo();
     setJustStarted(false);
     ui.reset();
     closeDetail("today");
     setAnnouncement("Demo bylo obnoveno do výchozího stavu.");
+    setBoardNotice("");
   }
 
   if (!board.state) {
@@ -198,7 +248,9 @@ export default function CallingModuleLayout() {
       ) : null}
 
       <div aria-live="polite" className="sr-only">{announcement}</div>
-      {view === "today" ? <TodayView contacts={board.state.contacts} now={now} filters={filters} selectedId={selectedId} onFiltersChange={ui.setFilters} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} onGoToNew={() => ui.setView("new")} /> : view === "new" ? <NewContactsView contacts={board.state.contacts} filters={newFilters} selectedId={selectedId} onFiltersChange={ui.setNewFilters} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} onGoToQueue={() => ui.setView("today")} justStarted={justStarted} /> : <ProcessBoard contacts={board.state.contacts} now={now} filters={filters} selectedId={selectedId} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} onGoToNew={() => ui.setView("new")} />}
+      {view === "today" ? <TodayView contacts={board.state.contacts} now={now} filters={filters} selectedId={selectedId} onFiltersChange={ui.setFilters} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} onGoToNew={() => ui.setView("new")} /> : view === "new" ? <NewContactsView contacts={board.state.contacts} filters={newFilters} selectedId={selectedId} onFiltersChange={ui.setNewFilters} onOpenContact={openContact} onResetDemo={() => setResetOpen(true)} onGoToQueue={() => ui.setView("today")} justStarted={justStarted} /> : <ProcessBoard contacts={board.state.contacts} now={now} filters={filters} selectedId={selectedId} onOpenContact={openContact} onRequestMove={requestBoardMove} onResetDemo={() => setResetOpen(true)} onGoToNew={() => ui.setView("new")} />}
+
+      {boardNotice ? <div role="status" className="content-surface fixed bottom-4 left-4 right-4 z-40 mx-auto flex max-w-xl items-start justify-between gap-3 p-4 shadow-xl sm:left-auto sm:right-6"><p className="dc-text-primary text-sm font-medium leading-relaxed">{boardNotice}</p><button type="button" onClick={() => setBoardNotice("")} className="button-quiet h-9 shrink-0 px-2 text-xs">Skrýt</button></div> : null}
 
       {selectedContact ? (
         <ContactDetail
@@ -224,6 +276,9 @@ export default function CallingModuleLayout() {
       ) : null}
       {selectedContact && pendingMove ? (
         <StatusChangeModal contact={selectedContact} target={pendingMove} onClose={() => setPendingMove(null)} onConfirm={() => applyMove(pendingMove)} />
+      ) : null}
+      {pendingBoardMove ? (
+        <MoveConfirmationModal draft={pendingBoardMove.draft} now={now} onClose={closeBoardMove} onConfirm={confirmBoardMove} onRefreshDraft={refreshBoardMoveDraft} />
       ) : null}
       {resetOpen ? <ResetDemoModal onClose={() => setResetOpen(false)} onConfirm={resetDemo} /> : null}
       </main>

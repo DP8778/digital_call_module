@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { persistDemoState, readDemoState, resetDemoState } from "./callingStorage";
 import { createDemoState } from "./mockContacts";
-import { moveContact } from "./stateLogic";
+import { applyBoardOperation, createContactMoveDraft, moveContact } from "./stateLogic";
 import { parsePragueDateTime } from "./time";
 
 const NOW = parsePragueDateTime("2026-10-12T12:00")!;
@@ -73,6 +73,25 @@ describe("odolnost úložiště dema", () => {
     expect(persisted).toMatchObject({ status: "failed", persistence: "write-unavailable" });
     expect(retry.status).toBe("skipped");
     expect(writes).toBe(1);
+  });
+
+  it("po obnovení stránky načte atomicky potvrzený stav i aktivitu", () => {
+    const initial = createDemoState(NOW);
+    const original = initial.contacts.find((item) => item.id === "demo-4")!;
+    const draft = createContactMoveDraft(original, "meeting")!;
+    const dueAt = NOW + 2 * 60 * 60_000;
+    const moved = applyBoardOperation(initial, { kind: "confirm_move", draft, activity: { activityType: "meeting", dueAt } }, NOW + 1_000);
+    expect(moved.accepted).toBe(true);
+    if (!moved.accepted) return;
+
+    let stored: string | null = null;
+    const storage = {
+      getItem: () => stored,
+      setItem: (_key: string, value: string) => { stored = value; },
+    };
+    expect(persistDemoState(storage, moved.state, "enabled").status).toBe("saved");
+    const restored = readDemoState(storage, NOW + 2_000);
+    expect(restored.state.contacts.find((item) => item.id === original.id)).toMatchObject({ status: "meeting", nextActivity: { type: "meeting", dueAt } });
   });
 
   it("vědomý reset může po chybě čtení uložený stav nahradit", () => {
